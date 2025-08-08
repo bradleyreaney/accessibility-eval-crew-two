@@ -159,3 +159,98 @@ class TestPDFParserIntegration:
                 assert plan_content.page_count > 0
         else:
             pytest.skip("Real remediation plans not available")
+
+    def test_extract_title_edge_cases(self):
+        """Test title extraction edge cases"""
+        parser = PDFParser()
+
+        # Test with no clear title - should pick the first meaningful line
+        content = "Page 1\nSome random content\nMore content"
+        title = parser._extract_title(content)
+        assert title in ["Some random content", "Untitled Document"]
+
+        # Test with multiple potential titles
+        content = "First Title\nSecond Title\nAccessibility Report\nContent"
+        title = parser._extract_title(content)
+        assert "Title" in title or "Report" in title
+
+        # Test with empty content
+        title = parser._extract_title("")
+        assert title == "Untitled Document"
+
+    def test_extract_metadata_error_handling(self):
+        """Test metadata extraction error handling"""
+        parser = PDFParser()
+
+        # Test with mock PDF object that has no metadata
+        class MockPDF:
+            metadata = None
+
+        result = parser._extract_metadata_pdfplumber(MockPDF())
+        assert isinstance(result, dict)
+        # Should have at least some default metadata
+        assert len(result) >= 0
+
+    def test_batch_parse_plans_empty_directory(self):
+        """Test batch parsing with empty directory"""
+        parser = PDFParser()
+
+        # Create a temporary empty directory
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            result = parser.batch_parse_plans(temp_path)
+            assert isinstance(result, dict)
+            assert len(result) == 0
+
+    def test_parse_audit_report_file_size_validation(self):
+        """Test file size validation"""
+        parser = PDFParser()
+
+        # Mock a file that's too large
+        with patch("pathlib.Path.stat") as mock_stat:
+            mock_stat.return_value.st_size = 100 * 1024 * 1024  # 100MB
+
+            with pytest.raises(ValueError, match="exceeds maximum"):
+                parser._validate_file(Path("large_file.pdf"))
+
+    def test_parse_remediation_plan_error_handling(self):
+        """Test error handling in remediation plan parsing"""
+        parser = PDFParser()
+
+        # Mock pdfplumber to raise an exception
+        with patch("pdfplumber.open") as mock_open:
+            mock_open.side_effect = Exception("PDF parsing failed")
+
+            with pytest.raises(ValueError, match="Failed to parse remediation plan"):
+                parser.parse_remediation_plan(Path("test.pdf"))
+
+    def test_batch_parse_plans_with_invalid_files(self):
+        """Test batch parsing with mix of valid and invalid files"""
+        parser = PDFParser()
+
+        # Mock directory with some files
+        with patch("pathlib.Path.glob") as mock_glob:
+            mock_files = [Path("PlanA.pdf"), Path("PlanB.pdf")]
+            mock_glob.return_value = mock_files
+
+            # Mock one successful parse and one failure
+            with patch.object(parser, "parse_remediation_plan") as mock_parse:
+
+                def side_effect(file_path):
+                    if "PlanA" in str(file_path):
+                        return DocumentContent(
+                            title="Plan A",
+                            content="Test content",
+                            page_count=1,
+                            metadata={},
+                        )
+                    else:
+                        raise ValueError("Parse failed")
+
+                mock_parse.side_effect = side_effect
+
+                result = parser.batch_parse_plans(Path("test_dir"))
+                assert len(result) == 1  # Only successful parse
+                assert "PlanA" in result

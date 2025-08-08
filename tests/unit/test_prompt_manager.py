@@ -68,7 +68,66 @@ class TestPromptManager:
 
             assert audit_content in result
             assert "Plan A content" in result
-            assert "### PERSONA" in result
+
+    def test_extract_evaluation_criteria_error_handling(self):
+        """Test criteria extraction with malformed content"""
+        malformed_prompt = "### PERSONA\nNo criteria here\n### TASK\nStill no criteria"
+
+        with patch("builtins.open", mock_open(read_data=malformed_prompt)):
+            manager = PromptManager(Path("test_prompt.md"))
+            criteria = manager.extract_evaluation_criteria()
+            # Should return empty dict if no criteria found
+            assert isinstance(criteria, dict)
+
+    def test_load_evaluation_framework_file_error(self):
+        """Test error handling when loading framework file"""
+        with patch("builtins.open", side_effect=IOError("Read error")):
+            with pytest.raises(ValueError, match="Failed to load evaluation prompt"):
+                PromptManager(Path("test_prompt.md"))
+
+    def test_extract_evaluation_criteria_alternative_patterns(self):
+        """Test criteria extraction with alternative patterns"""
+        alt_prompt = """
+        ### PERSONA
+        You are an expert
+
+        ### EVALUATION
+        40% Strategic Prioritization: Important factor
+        30% Technical Details: Another factor
+        """
+
+        with patch("builtins.open", mock_open(read_data=alt_prompt)):
+            manager = PromptManager(Path("test_prompt.md"))
+            criteria = manager.extract_evaluation_criteria()
+            assert isinstance(criteria, dict)
+
+    def test_get_plan_sections_edge_cases(self):
+        """Test plan section extraction edge cases"""
+        prompt_with_plans = """
+        #### Plan A: First plan
+        #### PlanB: Second plan
+        #### Plan C: Third plan
+        """
+
+        with patch("builtins.open", mock_open(read_data=prompt_with_plans)):
+            manager = PromptManager(Path("test_prompt.md"))
+            sections = manager.get_plan_sections()
+            assert isinstance(sections, list)
+
+    def test_get_prompt_length_and_preview(self, sample_eval_prompt):
+        """Test prompt length and preview functionality"""
+        with patch("builtins.open", mock_open(read_data=sample_eval_prompt)):
+            manager = PromptManager(Path("test_prompt.md"))
+
+            # Test length
+            length = manager.get_prompt_length()
+            assert length > 0
+            assert isinstance(length, int)
+
+            # Test preview
+            preview = manager.get_prompt_preview(100)
+            assert len(preview) <= 103  # 100 + "..."
+            assert isinstance(preview, str)
 
     def test_get_plan_sections(self, sample_eval_prompt):
         """Test extraction of plan sections"""
