@@ -1,0 +1,298 @@
+# GitHub Copilot Instructions
+*LLM as a Judge - Accessibility Evaluation System*
+
+## 🎯 Project Overview
+This project implements an LLM-as-a-Judge system for evaluating accessibility remediation plans using CrewAI, multi-agent workflows, and expert LLMs (Gemini Pro + GPT-4). We maintain **enterprise-grade standards** throughout development.
+
+## 🏗️ Architecture & Standards
+
+### **Core Principles**
+- **Test-Driven Development (TDD)**: Write tests before implementation
+- **90%+ Test Coverage**: Maintain high code quality standards  
+- **Type Safety**: Use Pydantic models and type hints throughout
+- **Clean Architecture**: Separation of concerns, modular design
+- **Documentation-First**: Every module, class, and function documented
+- **Error Handling**: Graceful failure handling with detailed logging
+
+### **Project Structure**
+```
+src/
+├── config/          # LLM connections and configuration
+├── models/          # Pydantic data models and validation
+├── tools/           # PDF parsing, prompt management
+└── agents/          # CrewAI agents (Phase 2+)
+
+tests/
+├── unit/            # Unit tests (fast, isolated)
+├── integration/     # Integration tests (real files, APIs)
+└── fixtures/        # Test data and mock helpers
+
+docs/                # Comprehensive documentation
+plans/               # Phase-by-phase implementation plans
+```
+
+## 🧪 Testing Standards
+
+### **Test Requirements**
+- **All new code**: Must have corresponding unit tests
+- **90%+ Coverage**: Use `pytest --cov=src --cov-report=term-missing`
+- **Fast Tests**: Unit tests should run in <10 seconds total
+- **Proper Mocking**: Mock external dependencies (LLM APIs, file I/O)
+- **Clear Test Names**: Descriptive test names explaining what's being tested
+
+### **Test Patterns to Follow**
+```python
+class TestComponentName:
+    """Test suite for ComponentName functionality"""
+    
+    def test_specific_behavior_under_condition(self):
+        """Test that specific behavior works under given condition"""
+        # Arrange
+        input_data = create_test_data()
+        
+        # Act
+        result = component.method(input_data)
+        
+        # Assert
+        assert result.expected_property == expected_value
+        assert len(result.collection) > 0
+```
+
+### **pytest Markers to Use**
+- `@pytest.mark.unit` - Fast, isolated unit tests
+- `@pytest.mark.integration` - Tests requiring real resources
+- `@pytest.mark.slow` - Tests taking >5 seconds
+- `@pytest.mark.llm` - Tests requiring LLM API connections
+
+## 📊 Data Models & Validation
+
+### **Pydantic V2 Standards**
+- Use `BaseModel` for all data structures
+- Include `field_validator` for custom validation
+- Add `model_config` for JSON schema generation
+- Document all fields with descriptions
+
+### **Example Pattern**
+```python
+from pydantic import BaseModel, field_validator
+from typing import List, Optional
+
+class DocumentContent(BaseModel):
+    """PDF document content with metadata"""
+    title: str
+    content: str
+    page_count: int
+    metadata: Optional[Dict[str, str]] = None
+    
+    @field_validator('content')
+    @classmethod
+    def validate_content_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError('Content cannot be empty')
+        return v
+```
+
+## 🔧 Code Quality Standards
+
+### **Function Documentation**
+```python
+def parse_audit_report(self, file_path: Path) -> DocumentContent:
+    """
+    Parse accessibility audit report from PDF file.
+    
+    Args:
+        file_path: Path to PDF file to parse
+        
+    Returns:
+        DocumentContent with extracted text and metadata
+        
+    Raises:
+        ValueError: If file doesn't exist or isn't a PDF
+        PDFParsingError: If PDF cannot be parsed
+        
+    Example:
+        >>> parser = PDFParser()
+        >>> doc = parser.parse_audit_report(Path('audit.pdf'))
+        >>> print(f"Extracted {len(doc.content)} characters")
+    """
+```
+
+### **Error Handling Pattern**
+```python
+try:
+    result = risky_operation()
+    logger.info(f"Operation succeeded: {result}")
+except SpecificException as e:
+    logger.error(f"Operation failed: {e}")
+    raise ProcessingError(f"Failed to process: {e}") from e
+```
+
+### **Logging Standards**
+- Use module-level logger: `logger = logging.getLogger(__name__)`
+- Log levels: DEBUG (detailed), INFO (progress), WARNING (issues), ERROR (failures)
+- Include context: `logger.info(f"Processed {count} files in {duration:.2f}s")`
+
+## 🤖 CrewAI Agent Development (Phase 2+)
+
+### **Agent Design Patterns**
+```python
+from crewai import Agent, Task, Crew
+
+class AccessibilityJudgeAgent(Agent):
+    """Expert judge for accessibility remediation evaluation"""
+    
+    def __init__(self, llm_manager: LLMManager):
+        super().__init__(
+            role="Accessibility Expert Judge",
+            goal="Evaluate remediation plans against WCAG standards",
+            backstory="Expert in web accessibility with deep WCAG knowledge",
+            llm=llm_manager.gemini,  # or .openai
+            verbose=True,
+            allow_delegation=False
+        )
+```
+
+### **Task Definition Patterns**
+```python
+evaluation_task = Task(
+    description="Evaluate Plan A against the 4 weighted criteria",
+    agent=judge_agent,
+    expected_output="Detailed scoring with reasoning for each criterion"
+)
+```
+
+## 📁 File Organization
+
+### **Import Order Standards**
+1. Standard library imports
+2. Third-party imports (crewai, langchain, pydantic)
+3. Local imports (relative imports last)
+
+```python
+# Standard library
+import os
+import logging
+from pathlib import Path
+from typing import Dict, List, Optional
+
+# Third-party
+import pdfplumber
+from pydantic import BaseModel
+from crewai import Agent, Task
+
+# Local
+from ..models.evaluation_models import DocumentContent
+from ..config.llm_config import LLMManager
+```
+
+### **Module Structure Template**
+```python
+"""
+Module description and purpose
+References: Master Plan - Relevant section
+"""
+
+# Imports (see order above)
+
+# Module-level constants
+DEFAULT_TIMEOUT = 30
+SUPPORTED_FORMATS = ['.pdf']
+
+# Logger setup
+logger = logging.getLogger(__name__)
+
+# Classes and functions
+class MainClass:
+    """Class description"""
+    pass
+
+def utility_function() -> ReturnType:
+    """Function description"""
+    pass
+```
+
+## 🚀 Development Workflow
+
+### **Before Writing Code**
+1. **Understand the requirement** - Read relevant plan documentation
+2. **Write the test first** - Define expected behavior
+3. **Implement minimum viable solution** - Make test pass
+4. **Refactor for quality** - Clean up, add error handling
+5. **Update documentation** - Docstrings, README updates
+
+### **Before Committing**
+1. **Run full test suite**: `pytest tests/unit/ -v`
+2. **Check coverage**: `pytest --cov=src --cov-report=term-missing`
+3. **Format code**: `black src/ tests/`
+4. **Lint code**: `flake8 src/ tests/`
+5. **Update documentation** if needed
+
+### **Git Commit Standards**
+- Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
+- Be descriptive: `feat(pdf-parser): add batch processing for remediation plans`
+- Reference issues: `Closes #123` or `Refs #456`
+
+## 📚 Documentation Requirements
+
+### **Always Document**
+- **Purpose**: What does this code do?
+- **Parameters**: What inputs are expected?
+- **Returns**: What outputs are provided?
+- **Errors**: What can go wrong?
+- **Examples**: How to use it?
+
+### **Update Documentation When**
+- Adding new features or modules
+- Changing public APIs
+- Fixing bugs that affect behavior
+- Adding new dependencies or requirements
+
+## 🔒 Security & Best Practices
+
+### **API Key Management**
+- **Never hardcode** API keys or secrets
+- Use environment variables: `os.getenv("API_KEY")`
+- Provide examples: `.env.example` file
+- Log warnings for missing keys, not the keys themselves
+
+### **Input Validation**
+- Validate all external inputs (file paths, API responses)
+- Use Pydantic models for structure validation
+- Handle edge cases gracefully
+- Provide clear error messages
+
+### **Performance Considerations**
+- Use lazy loading for expensive resources
+- Implement proper caching where appropriate
+- Monitor memory usage for large file processing
+- Include performance benchmarks in tests
+
+## 🎯 Phase-Specific Guidelines
+
+### **Current: Phase 1 Complete** ✅
+- Foundation is solid with 90%+ test coverage
+- All core components functional and validated
+- Ready for Phase 2 agent development
+
+### **Next: Phase 2 - Core Agents**
+- Focus on CrewAI agent implementation
+- Build judge agents for Gemini Pro and GPT-4
+- Implement weighted evaluation criteria
+- Test agent coordination and workflow
+
+### **Future Phases**
+- Phase 3: Multi-agent workflows
+- Phase 4: User interface development
+- Phase 5: Advanced features and optimization
+
+---
+
+## 🎉 Success Metrics
+
+When following these guidelines, we achieve:
+- **High Code Quality**: Maintainable, testable, documented code
+- **Reliable System**: Robust error handling and validation
+- **Developer Experience**: Clear patterns and consistent structure
+- **Enterprise Grade**: Professional standards suitable for production
+
+**Remember**: These standards ensure our LLM-as-a-Judge system maintains the highest quality throughout development. Every contribution should meet these criteria!
