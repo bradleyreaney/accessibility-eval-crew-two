@@ -20,19 +20,19 @@ logger = logging.getLogger(__name__)
 class PrimaryJudgeAgent:
     """
     Expert accessibility consultant using Gemini Pro for primary evaluation.
-    
+
     This agent follows the evaluation framework from promt/eval-prompt.md exactly
     and provides comprehensive assessment of remediation plans using weighted criteria:
     - Strategic Prioritization (40%)
-    - Technical Specificity (30%) 
+    - Technical Specificity (30%)
     - Comprehensiveness (20%)
     - Long-term Vision (10%)
     """
-    
+
     def __init__(self, llm_manager: LLMManager):
         """
         Initialize the primary judge agent.
-        
+
         Args:
             llm_manager: LLM configuration manager with Gemini Pro access
         """
@@ -40,7 +40,7 @@ class PrimaryJudgeAgent:
         self.llm = llm_manager.gemini
         self.agent = self._create_agent()
         self.tools = self._initialize_tools()
-    
+
     def _create_agent(self) -> Agent:
         """Create the primary judge agent with proper configuration"""
         return Agent(
@@ -72,36 +72,38 @@ class PrimaryJudgeAgent:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[]  # Tools will be added separately to avoid circular imports
+            tools=[],  # Tools will be added separately to avoid circular imports
         )
-    
+
     def _initialize_tools(self) -> List:
         """Initialize the tools used by this agent"""
         try:
             return [
                 EvaluationFrameworkTool(),
                 ScoringCalculatorTool(),
-                GapAnalyzerTool()
+                GapAnalyzerTool(),
             ]
         except Exception as e:
             logger.warning(f"Some tools failed to initialize: {e}")
             return []
-    
-    def evaluate_plan(self, plan_name: str, plan_content: str, audit_context: str) -> Dict[str, Any]:
+
+    def evaluate_plan(
+        self, plan_name: str, plan_content: str, audit_context: str
+    ) -> Dict[str, Any]:
         """
         Evaluate a single remediation plan using the established framework.
-        
+
         Args:
             plan_name: Name of the plan (e.g., "PlanA")
             plan_content: Full text content of the remediation plan
             audit_context: Original accessibility audit report
-            
+
         Returns:
             Structured evaluation results
         """
         try:
             logger.info(f"Primary judge evaluating {plan_name}")
-            
+
             # Create evaluation task
             evaluation_task = Task(
                 description=f"""
@@ -145,13 +147,13 @@ class PrimaryJudgeAgent:
                 - Strengths and weaknesses analysis  
                 - Gap analysis findings
                 - Specific improvement recommendations
-                """
+                """,
             )
-            
+
             # Execute evaluation using the agent directly
             # Note: In CrewAI, tasks are typically executed by Crew, not individually
             # For now, we'll use the agent's LLM directly for evaluation
-            
+
             evaluation_prompt = f"""
             As an expert accessibility consultant, evaluate {plan_name} using the 
             comprehensive framework established in promt/eval-prompt.md.
@@ -179,22 +181,24 @@ class PrimaryJudgeAgent:
             4. Provide overall assessment with strengths and weaknesses
             5. Make specific recommendations for improvement
             """
-            
+
             result = self.llm.invoke(evaluation_prompt)
-            result_content = result.content if hasattr(result, 'content') else str(result)
-            
+            result_content = (
+                result.content if hasattr(result, "content") else str(result)
+            )
+
             # Structure the response
             evaluation_result = {
                 "plan_name": plan_name,
                 "evaluator": "Primary Judge (Gemini Pro)",
                 "evaluation_content": result_content,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "success": True
+                "success": True,
             }
-            
+
             logger.info(f"Primary judge completed evaluation of {plan_name}")
             return evaluation_result
-            
+
         except Exception as e:
             logger.error(f"Primary judge evaluation failed for {plan_name}: {e}")
             return {
@@ -202,19 +206,20 @@ class PrimaryJudgeAgent:
                 "evaluator": "Primary Judge (Gemini Pro)",
                 "evaluation_content": f"Evaluation failed: {str(e)}",
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
-    
-    def create_evaluation_task(self, plan_name: str, plan_content: str, 
-                             audit_context: str) -> Task:
+
+    def create_evaluation_task(
+        self, plan_name: str, plan_content: str, audit_context: str
+    ) -> Task:
         """
         Create a structured evaluation task for the agent.
-        
+
         Args:
             plan_name: Name of the plan to evaluate
             plan_content: Full content of the remediation plan
             audit_context: Original audit report for context
-            
+
         Returns:
             Configured CrewAI Task for evaluation
         """
@@ -230,9 +235,9 @@ class PrimaryJudgeAgent:
             Audit Context: {audit_context[:1000]}...
             """,
             agent=self.agent,
-            expected_output="Detailed evaluation with scores, reasoning, and recommendations"
+            expected_output="Detailed evaluation with scores, reasoning, and recommendations",
         )
-    
+
     def get_agent_info(self) -> Dict[str, Any]:
         """Get information about this agent"""
         return {
@@ -242,25 +247,25 @@ class PrimaryJudgeAgent:
             "tools": [tool.name for tool in self.tools],
             "capabilities": [
                 "Comprehensive plan evaluation",
-                "Weighted scoring using established criteria", 
+                "Weighted scoring using established criteria",
                 "Gap analysis and missing element identification",
-                "Strategic recommendation generation"
-            ]
+                "Strategic recommendation generation",
+            ],
         }
 
 
 class SecondaryJudgeAgent:
     """
     Secondary accessibility consultant using GPT-4 for independent evaluation.
-    
+
     This agent provides a second opinion using the same evaluation framework
     but with a different LLM to ensure objectivity and catch potential biases.
     """
-    
+
     def __init__(self, llm_manager: LLMManager):
         """
         Initialize the secondary judge agent.
-        
+
         Args:
             llm_manager: LLM configuration manager with GPT-4 access
         """
@@ -268,11 +273,11 @@ class SecondaryJudgeAgent:
         self.llm = llm_manager.openai
         self.agent = self._create_agent()
         self.tools = self._initialize_tools()
-    
+
     def _create_agent(self) -> Agent:
         """Create the secondary judge agent with proper configuration"""
         return Agent(
-            role="Expert Accessibility Consultant - Secondary Judge", 
+            role="Expert Accessibility Consultant - Secondary Judge",
             goal="""Provide independent evaluation of remediation plans using the same
                    framework as the primary judge, offering a second perspective to
                    ensure comprehensive and unbiased assessment.""",
@@ -292,38 +297,43 @@ class SecondaryJudgeAgent:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[]
+            tools=[],
         )
-    
+
     def _initialize_tools(self) -> List:
         """Initialize the tools used by this agent"""
         try:
             return [
                 EvaluationFrameworkTool(),
                 ScoringCalculatorTool(),
-                GapAnalyzerTool()
+                GapAnalyzerTool(),
             ]
         except Exception as e:
             logger.warning(f"Some tools failed to initialize for secondary judge: {e}")
             return []
-    
-    def evaluate_plan(self, plan_name: str, plan_content: str, audit_context: str,
-                     primary_evaluation: Optional[str] = None) -> Dict[str, Any]:
+
+    def evaluate_plan(
+        self,
+        plan_name: str,
+        plan_content: str,
+        audit_context: str,
+        primary_evaluation: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Provide independent evaluation of a remediation plan.
-        
+
         Args:
             plan_name: Name of the plan (e.g., "PlanA")
             plan_content: Full text content of the remediation plan
             audit_context: Original accessibility audit report
             primary_evaluation: Optional primary judge evaluation for comparison
-            
+
         Returns:
             Structured evaluation results
         """
         try:
             logger.info(f"Secondary judge evaluating {plan_name}")
-            
+
             evaluation_prompt = f"""
             As an independent accessibility consultant, provide a thorough evaluation 
             of {plan_name} using the established framework from promt/eval-prompt.md.
@@ -355,32 +365,34 @@ class SecondaryJudgeAgent:
             
             3. Offer recommendations that complement the overall evaluation
             """
-            
+
             result = self.llm.invoke(evaluation_prompt)
-            result_content = result.content if hasattr(result, 'content') else str(result)
-            
+            result_content = (
+                result.content if hasattr(result, "content") else str(result)
+            )
+
             evaluation_result = {
                 "plan_name": plan_name,
                 "evaluator": "Secondary Judge (GPT-4)",
                 "evaluation_content": result_content,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "success": True,
-                "includes_primary_comparison": primary_evaluation is not None
+                "includes_primary_comparison": primary_evaluation is not None,
             }
-            
+
             logger.info(f"Secondary judge completed evaluation of {plan_name}")
             return evaluation_result
-            
+
         except Exception as e:
             logger.error(f"Secondary judge evaluation failed for {plan_name}: {e}")
             return {
                 "plan_name": plan_name,
-                "evaluator": "Secondary Judge (GPT-4)", 
+                "evaluator": "Secondary Judge (GPT-4)",
                 "evaluation_content": f"Evaluation failed: {str(e)}",
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
-    
+
     def get_agent_info(self) -> Dict[str, Any]:
         """Get information about this agent"""
         return {
@@ -392,6 +404,6 @@ class SecondaryJudgeAgent:
                 "Independent plan evaluation",
                 "Objective second opinion analysis",
                 "Primary evaluation validation",
-                "Alternative perspective identification"
-            ]
+                "Alternative perspective identification",
+            ],
         }

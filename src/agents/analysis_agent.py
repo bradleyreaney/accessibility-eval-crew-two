@@ -19,18 +19,18 @@ logger = logging.getLogger(__name__)
 class AnalysisAgent:
     """
     Strategic analysis agent for comprehensive insights and decision support.
-    
+
     This agent provides:
     - Strategic recommendation synthesis
     - Implementation roadmap guidance
     - Risk assessment and mitigation
     - Organizational fit analysis
     """
-    
+
     def __init__(self, llm_manager: LLMManager):
         """
         Initialize the analysis agent.
-        
+
         Args:
             llm_manager: LLM configuration manager
         """
@@ -38,7 +38,7 @@ class AnalysisAgent:
         self.llm = llm_manager.openai  # Use GPT-4 for strategic analysis
         self.agent = self._create_agent()
         self.tools = self._initialize_tools()
-    
+
     def _create_agent(self) -> Agent:
         """Create the analysis agent with proper configuration"""
         return Agent(
@@ -64,37 +64,37 @@ class AnalysisAgent:
             verbose=True,
             allow_delegation=False,
             llm=self.llm,
-            tools=[]
+            tools=[],
         )
-    
+
     def _initialize_tools(self) -> List:
         """Initialize the tools used by this agent"""
         try:
-            return [
-                GapAnalyzerTool(),
-                PlanComparatorTool()
-            ]
+            return [GapAnalyzerTool(), PlanComparatorTool()]
         except Exception as e:
             logger.warning(f"Some tools failed to initialize for analysis agent: {e}")
             return []
-    
-    def generate_strategic_analysis(self, evaluations: List[Dict[str, Any]], 
-                                  scoring_results: Dict[str, Any],
-                                  organizational_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+
+    def generate_strategic_analysis(
+        self,
+        evaluations: List[Dict[str, Any]],
+        scoring_results: Dict[str, Any],
+        organizational_context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         Generate comprehensive strategic analysis and recommendations.
-        
+
         Args:
             evaluations: List of evaluation results from judge agents
             scoring_results: Scoring and ranking results
             organizational_context: Optional context about the organization
-            
+
         Returns:
             Strategic analysis with implementation recommendations
         """
         try:
             logger.info("Generating strategic analysis and recommendations")
-            
+
             analysis_prompt = f"""
             As a strategic accessibility implementation analyst, provide comprehensive
             analysis and actionable recommendations based on the evaluation results.
@@ -144,47 +144,55 @@ class AnalysisAgent:
             
             Provide strategic insights that enable confident decision-making and successful implementation.
             """
-            
+
             result = self.llm.invoke(analysis_prompt)
-            result_content = result.content if hasattr(result, 'content') else str(result)
-            
+            result_content = (
+                result.content if hasattr(result, "content") else str(result)
+            )
+
             strategic_analysis = {
                 "analysis_type": "Strategic Implementation Analysis",
-                "primary_recommendation": self._extract_primary_recommendation(str(result_content)),
+                "primary_recommendation": self._extract_primary_recommendation(
+                    str(result_content)
+                ),
                 "analysis_content": result_content,
                 "evaluations_analyzed": len(evaluations),
-                "scoring_data_included": bool(scoring_results.get('success')),
+                "scoring_data_included": bool(scoring_results.get("success")),
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "success": True
+                "success": True,
             }
-            
+
             logger.info("Strategic analysis completed successfully")
             return strategic_analysis
-            
+
         except Exception as e:
             logger.error(f"Strategic analysis generation failed: {e}")
             return {
                 "error": str(e),
                 "success": False,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
-    
-    def analyze_implementation_readiness(self, recommended_plan: str, plan_content: str,
-                                       evaluation_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def analyze_implementation_readiness(
+        self,
+        recommended_plan: str,
+        plan_content: str,
+        evaluation_data: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         """
         Analyze implementation readiness for the recommended plan.
-        
+
         Args:
             recommended_plan: Name of the recommended plan
             plan_content: Full content of the recommended plan
             evaluation_data: Evaluation results for context
-            
+
         Returns:
             Implementation readiness assessment
         """
         try:
             logger.info(f"Analyzing implementation readiness for {recommended_plan}")
-            
+
             readiness_prompt = f"""
             Assess the implementation readiness and provide actionable guidance for
             executing the recommended accessibility remediation plan.
@@ -231,42 +239,48 @@ class AnalysisAgent:
             
             Provide practical, actionable guidance for successful implementation.
             """
-            
+
             result = self.llm.invoke(readiness_prompt)
-            result_content = result.content if hasattr(result, 'content') else str(result)
-            
+            result_content = (
+                result.content if hasattr(result, "content") else str(result)
+            )
+
             readiness_assessment = {
                 "recommended_plan": recommended_plan,
                 "assessment_type": "Implementation Readiness Analysis",
                 "readiness_content": result_content,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "success": True
+                "success": True,
             }
-            
-            logger.info(f"Implementation readiness analysis completed for {recommended_plan}")
+
+            logger.info(
+                f"Implementation readiness analysis completed for {recommended_plan}"
+            )
             return readiness_assessment
-            
+
         except Exception as e:
             logger.error(f"Implementation readiness analysis failed: {e}")
             return {
                 "error": str(e),
                 "success": False,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
-    
-    def generate_executive_summary(self, all_analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+
+    def generate_executive_summary(
+        self, all_analysis_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Generate executive summary for leadership decision-making.
-        
+
         Args:
             all_analysis_data: Complete analysis results including evaluations, scoring, and strategic analysis
-            
+
         Returns:
             Executive summary with key insights and recommendations
         """
         try:
             logger.info("Generating executive summary")
-            
+
             executive_prompt = f"""
             Create a concise executive summary for organizational leadership to support
             accessibility remediation plan decision-making.
@@ -300,90 +314,97 @@ class AnalysisAgent:
             
             Keep the summary to 1 page, focused on decision-making insights.
             """
-            
+
             result = self.llm.invoke(executive_prompt)
-            result_content = result.content if hasattr(result, 'content') else str(result)
-            
+            result_content = (
+                result.content if hasattr(result, "content") else str(result)
+            )
+
             executive_summary = {
                 "summary_type": "Executive Decision Summary",
                 "summary_content": result_content,
                 "data_sources": list(all_analysis_data.keys()),
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "success": True
+                "success": True,
             }
-            
+
             logger.info("Executive summary generated successfully")
             return executive_summary
-            
+
         except Exception as e:
             logger.error(f"Executive summary generation failed: {e}")
             return {
                 "error": str(e),
                 "success": False,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
-    
+
     def _format_evaluations_summary(self, evaluations: List[Dict[str, Any]]) -> str:
         """Format evaluations for strategic analysis"""
         if not evaluations:
             return "No evaluations available"
-        
+
         summary_lines = [f"Total Evaluations: {len(evaluations)}", ""]
-        
+
         for eval_data in evaluations:
-            if eval_data.get('success'):
-                plan_name = eval_data.get('plan_name', 'Unknown')
-                evaluator = eval_data.get('evaluator', 'Unknown')
-                content_preview = eval_data.get('evaluation_content', '')[:200]
-                summary_lines.append(f"Plan {plan_name} ({evaluator}): {content_preview}...")
-        
+            if eval_data.get("success"):
+                plan_name = eval_data.get("plan_name", "Unknown")
+                evaluator = eval_data.get("evaluator", "Unknown")
+                content_preview = eval_data.get("evaluation_content", "")[:200]
+                summary_lines.append(
+                    f"Plan {plan_name} ({evaluator}): {content_preview}..."
+                )
+
         return "\n".join(summary_lines)
-    
+
     def _format_scoring_summary(self, scoring_results: Dict[str, Any]) -> str:
         """Format scoring results for strategic analysis"""
-        if not scoring_results.get('success'):
+        if not scoring_results.get("success"):
             return "Scoring analysis not available"
-        
-        rankings = scoring_results.get('rankings', [])
+
+        rankings = scoring_results.get("rankings", [])
         summary_lines = ["PLAN RANKINGS:"]
-        
+
         for i, (plan_name, score) in enumerate(rankings[:5], 1):
             summary_lines.append(f"{i}. {plan_name}: {score:.2f}/10")
-        
+
         return "\n".join(summary_lines)
-    
+
     def _format_organizational_context(self, context: Dict[str, Any]) -> str:
         """Format organizational context for analysis"""
         if not context:
             return ""
-        
+
         formatted = []
         for key, value in context.items():
             formatted.append(f"{key.title()}: {value}")
-        
+
         return "\n".join(formatted)
-    
+
     def _format_complete_analysis(self, data: Dict[str, Any]) -> str:
         """Format complete analysis data for executive summary"""
         formatted_sections = []
-        
+
         for section_name, section_data in data.items():
-            if isinstance(section_data, dict) and section_data.get('success'):
-                preview = str(section_data).replace('\n', ' ')[:300]
+            if isinstance(section_data, dict) and section_data.get("success"):
+                preview = str(section_data).replace("\n", " ")[:300]
                 formatted_sections.append(f"{section_name.upper()}: {preview}...")
-        
+
         return "\n\n".join(formatted_sections)
-    
+
     def _extract_primary_recommendation(self, content: str) -> str:
         """Extract primary recommendation from analysis content"""
         # Simple extraction - look for recommendation keywords
-        lines = content.split('\n')
+        lines = content.split("\n")
         for line in lines:
-            if any(keyword in line.lower() for keyword in ['recommend', 'primary', 'best', 'top']):
+            if any(
+                keyword in line.lower()
+                for keyword in ["recommend", "primary", "best", "top"]
+            ):
                 return line.strip()[:200]
-        
+
         return "See full analysis for recommendations"
-    
+
     def get_agent_info(self) -> Dict[str, Any]:
         """Get information about this agent"""
         return {
@@ -395,6 +416,6 @@ class AnalysisAgent:
                 "Strategic implementation analysis",
                 "Implementation readiness assessment",
                 "Executive summary generation",
-                "Risk assessment and mitigation planning"
-            ]
+                "Risk assessment and mitigation planning",
+            ],
         }

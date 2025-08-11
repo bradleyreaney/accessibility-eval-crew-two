@@ -7,9 +7,4 @@ from .judge_agent import PrimaryJudgeAgent, SecondaryJudgeAgent
 from .scoring_agent import ScoringAgent
 from .analysis_agent import AnalysisAgent
 
-__all__ = [
-    "PrimaryJudgeAgent",
-    "SecondaryJudgeAgent", 
-    "ScoringAgent",
-    "AnalysisAgent"
-]
+__all__ = ["PrimaryJudgeAgent", "SecondaryJudgeAgent", "ScoringAgent", "AnalysisAgent"]

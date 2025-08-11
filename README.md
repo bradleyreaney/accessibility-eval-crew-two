@@ -2,8 +2,8 @@
 
 *An enterprise-grade AI system for evaluating accessibility remediation plans using multi-agent LLM workflows*
 
-[![Tests](https://img.shields.io/badge/tests-39%20passed-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-90.34%25-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-68%20passed-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-32.20%25-red)]()
 [![Phase](https://img.shields.io/badge/phase-2%20complete-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11+-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
@@ -12,7 +12,7 @@
 
 This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments.
 
-**Status: Phase 2 COMPLETE** - Core agent evaluation system fully implemented and operational.
+**Status: Phase 2 COMPLETE** - Core agent evaluation system fully implemented and operational (August 2025).
 
 ### Key Features
 - 🤖 **Multi-Agent Evaluation**: 4 specialized CrewAI agents with Gemini Pro & GPT-4

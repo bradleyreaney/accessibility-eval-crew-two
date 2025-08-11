@@ -11,6 +11,6 @@ from .plan_comparator import PlanComparatorTool
 __all__ = [
     "EvaluationFrameworkTool",
     "ScoringCalculatorTool",
-    "GapAnalyzerTool", 
-    "PlanComparatorTool"
+    "GapAnalyzerTool",
+    "PlanComparatorTool",
 ]
