@@ -149,11 +149,12 @@ jobs:
       if: always()
       run: |
         echo "🎯 Quality Gates Results:"
-        echo "├── ✅ Code Formatting (Black)"
-        echo "├── ✅ Code Linting (Flake8)"
-        echo "├── ✅ Security Scan (Bandit)"
-        echo "├── ✅ Unit Tests (90%+ Coverage)"
-        echo "├── ✅ Performance (<5s per test)"
-        echo "└── ✅ Documentation Check"
+        echo "This summary shows hardcoded success messages."
+        echo "Check individual step results above for actual status."
+        echo "Pipeline will fail if any critical step fails."
         echo ""
-        echo "🚀 Ready for Phase 2 development!"
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "🚀 All quality gates passed - Ready for deployment!"
+        else
+          echo "❌ Some quality gates failed - Review errors above"
+        fi
