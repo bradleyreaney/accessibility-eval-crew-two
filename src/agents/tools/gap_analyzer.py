@@ -39,6 +39,12 @@ class GapAnalyzerTool(BaseTool):
     args_schema: type[BaseModel] = GapAnalysisInput
 
     def __init__(self):
+        """
+        Initialize the Gap Analyzer Tool.
+
+        Sets up the tool for analyzing gaps between audit findings and remediation
+        plan coverage, including WCAG compliance analysis and strategic oversight detection.
+        """
         super().__init__(
             name="gap_analyzer",
             description="""Analyze gaps between audit findings and remediation coverage.
@@ -160,7 +166,7 @@ RECOMMENDATIONS:
             line.strip() for line in audit_content.split("\n") if line.strip()
         ]
 
-        coverage_stats = {
+        coverage_stats: Dict[str, Any] = {
             "total_issues": 0,
             "addressed_issues": 0,
             "partially_addressed": 0,

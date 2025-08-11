@@ -44,6 +44,12 @@ class EvaluationFrameworkTool(BaseTool):
     args_schema: type[BaseModel] = EvaluationFrameworkInput
 
     def __init__(self):
+        """
+        Initialize the Evaluation Framework Tool.
+
+        Sets up the tool for applying standardized evaluation criteria to
+        accessibility remediation plans using the established 4-criterion framework.
+        """
         super().__init__(
             name="evaluation_framework",
             description="""Apply the standardized evaluation framework to assess a remediation plan.

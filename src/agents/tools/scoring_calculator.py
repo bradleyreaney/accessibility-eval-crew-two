@@ -43,6 +43,12 @@ class ScoringCalculatorTool(BaseTool):
     args_schema: type[BaseModel] = ScoringInput
 
     def __init__(self):
+        """
+        Initialize the Scoring Calculator Tool.
+
+        Sets up the tool for calculating weighted scores and performing
+        statistical analysis on remediation plan evaluations.
+        """
         super().__init__(
             name="scoring_calculator",
             description="""Calculate weighted scores for remediation plans using evaluation criteria.

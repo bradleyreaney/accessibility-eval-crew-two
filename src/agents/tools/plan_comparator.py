@@ -41,6 +41,12 @@ class PlanComparatorTool(BaseTool):
     args_schema: type[BaseModel] = ComparisonInput
 
     def __init__(self):
+        """
+        Initialize the Plan Comparator Tool.
+
+        Sets up the tool for performing detailed head-to-head comparisons between
+        remediation plans, analyzing strengths, weaknesses, and strategic differences.
+        """
         super().__init__(
             name="plan_comparator",
             description="""Perform detailed head-to-head comparison between remediation plans.
