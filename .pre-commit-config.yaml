@@ -17,6 +17,13 @@ repos:
       - id: isort
         args: [--profile=black, --line-length=88]
 
+  # Flake8 - Linting to match GitHub Actions
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        args: [--max-line-length=100]
+
   # Basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0

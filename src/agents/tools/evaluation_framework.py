@@ -129,7 +129,7 @@ class EvaluationFrameworkTool(BaseTool):
 
         criteria_text = "\n".join(
             [
-                f"- {criterion_name} ({weight*100:.0f}%)"
+                f"- {criterion_name} ({weight * 100:.0f}%)"
                 for criterion_name, weight in context["criteria"].items()
             ]
         )

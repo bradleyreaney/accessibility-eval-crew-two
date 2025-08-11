@@ -1,13 +1,13 @@
 [flake8]
-# Maximum line length to match Black
-max-line-length = 88
+# Maximum line length to match GitHub Actions
+max-line-length = 100
 
 # Extend ignore for Black compatibility
 extend-ignore =
     # E203: Whitespace before ':' (conflicts with Black)
     E203,
     # W503: Line break before binary operator (conflicts with Black)
-    W503,
+    W503
     # E501: Line too long (handled by Black)
     E501,
     # F401: Module imported but unused (allow in __init__.py)

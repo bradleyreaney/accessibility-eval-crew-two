@@ -43,7 +43,7 @@ jobs:
 
     - name: Code Quality - Flake8 Linting
       run: |
-        flake8 src/ tests/ --max-line-length=100 --ignore=E203,W503 --statistics
+        flake8 src/ tests/ --statistics
       continue-on-error: false
 
     - name: Type Checking - mypy
