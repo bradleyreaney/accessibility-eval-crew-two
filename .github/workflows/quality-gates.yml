@@ -9,7 +9,9 @@ on:
 jobs:
   quality-gates:
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # Prevent runaway jobs
     strategy:
+      fail-fast: false  # Don't cancel other jobs if one fails
       matrix:
         python-version: [3.11, 3.12]
 
@@ -47,12 +49,14 @@ jobs:
       continue-on-error: false
 
     - name: Type Checking - mypy
+      timeout-minutes: 5  # Prevent mypy hangs
       run: |
         pip install mypy types-requests
         mypy src/ --ignore-missing-imports --no-strict-optional
       continue-on-error: true  # Allow to pass while we improve type coverage
 
     - name: Security Scan - bandit
+      timeout-minutes: 5  # Prevent security scan hangs
       run: |
         pip install bandit
         bandit -r src/ -f json -o bandit-report.json || true
@@ -60,22 +64,26 @@ jobs:
       continue-on-error: false
 
     - name: Unit Tests with Coverage
+      timeout-minutes: 10  # Prevent test hangs
       run: |
-        python -m pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=90
+        python -m pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=90 --tb=short
       env:
         PYTHONPATH: ${{ github.workspace }}/src
 
     - name: Upload Coverage to Codecov
+      timeout-minutes: 3  # Prevent upload hangs
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
+        fail_ci_if_error: false  # Don't fail if codecov is down
 
     - name: Integration Tests (if API keys available)
+      timeout-minutes: 10  # Prevent integration test hangs
       run: |
         if [ -n "${{ secrets.GOOGLE_API_KEY }}" ] && [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
-          python -m pytest tests/integration/ -v --llm
+          python -m pytest tests/integration/ -v --llm --tb=short
         else
           echo "⚠️  Integration tests skipped - API keys not configured"
         fi

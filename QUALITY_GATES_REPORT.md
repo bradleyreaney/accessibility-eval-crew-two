@@ -35,7 +35,7 @@ black --check --diff src/ tests/
 ✅ All done! ✨ 🍰 ✨ 21 files would be left unchanged.
 
 # Flake8 Linting Check  
-flake8 src/ tests/ --max-line-length=100 --ignore=E203,W503 --statistics
+flake8 src/ tests/ --statistics
 ✅ No issues found
 
 # Security Scan
