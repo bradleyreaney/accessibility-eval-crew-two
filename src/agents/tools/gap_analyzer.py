@@ -89,9 +89,6 @@ class GapAnalyzerTool(BaseTool):
 
             # Basic coverage assessment
             covered_issues = 0
-            total_issues = max(
-                1, len([line for line in audit_content.split("\n") if line.strip()])
-            )
 
             # Simple keyword matching for demo purposes
             accessibility_keywords = [

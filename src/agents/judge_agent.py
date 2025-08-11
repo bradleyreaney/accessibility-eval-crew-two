@@ -105,52 +105,6 @@ class PrimaryJudgeAgent:
         try:
             logger.info(f"Primary judge evaluating {plan_name}")
 
-            # Create evaluation task
-            evaluation_task = Task(
-                description=f"""
-                Evaluate {plan_name} for accessibility remediation effectiveness using the
-                established evaluation framework.
-
-                CONTEXT (Original Audit):
-                {audit_context[:2000]}...
-
-                PLAN TO EVALUATE ({plan_name}):
-                {plan_content[:3000]}...
-
-                EVALUATION REQUIREMENTS:
-                1. Apply each weighted criterion systematically:
-                   - Strategic Prioritization (40%): Risk-based sequencing, critical path analysis
-                   - Technical Specificity (30%): Implementation detail, clarity, feasibility
-                   - Comprehensiveness (20%): Coverage of audit findings, completeness
-                   - Long-term Vision (10%): Sustainability, maintenance, scalability
-
-                2. For each criterion, provide:
-                   - Score (1-10 scale)
-                   - Detailed reasoning (2-3 sentences minimum)
-                   - Specific evidence from the plan
-                   - Areas for improvement
-
-                3. Calculate weighted final score
-
-                4. Provide overall assessment with strengths and weaknesses
-
-                5. Make specific recommendations for improvement
-
-                Use the evaluation_framework tool to structure your analysis.
-                Use the gap_analyzer tool to identify missing elements.
-                Use the scoring_calculator tool for weighted score calculations.
-                """,
-                agent=self.agent,
-                expected_output="""
-                Comprehensive evaluation report with:
-                - Individual criterion scores and reasoning
-                - Weighted overall score
-                - Strengths and weaknesses analysis
-                - Gap analysis findings
-                - Specific improvement recommendations
-                """,
-            )
-
             # Execute evaluation using the agent directly
             # Note: In CrewAI, tasks are typically executed by Crew, not individually
             # For now, we'll use the agent's LLM directly for evaluation
