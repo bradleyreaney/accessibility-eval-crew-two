@@ -3,15 +3,10 @@
 Phase 1 validation script
 Tests all major components to ensure proper setup
 """
-import sys
-import os
-from pathlib import Path
 import logging
-
-import sys
 import os
+import sys
 from pathlib import Path
-import logging
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent
@@ -31,11 +26,11 @@ def test_imports():
     print("🧪 Testing imports...")
 
     try:
-        from src.tools.pdf_parser import PDFParser
-        from src.tools.prompt_manager import PromptManager
-        from src.config.llm_config import LLMManager, LLMConfig
+        from src.config.llm_config import LLMConfig, LLMManager
         from src.models.evaluation_models import DocumentContent, EvaluationCriteria
         from src.models.report_models import EvaluationReport, ReportMetadata
+        from src.tools.pdf_parser import PDFParser
+        from src.tools.prompt_manager import PromptManager
 
         print("✅ All imports successful")
         return True
@@ -124,7 +119,7 @@ def test_llm_config():
     print("\n🧪 Testing LLM configuration...")
 
     try:
-        from src.config.llm_config import LLMManager, LLMConfig
+        from src.config.llm_config import LLMConfig, LLMManager
 
         # Test with mock keys
         config = LLMConfig(gemini_api_key="test_key", openai_api_key="test_key")

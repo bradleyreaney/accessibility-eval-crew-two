@@ -3,12 +3,14 @@ PyTest configuration and fixtures for comprehensive TDD implementation
 References: TDD Strategy - Test Foundation
 """
 
-import pytest
 import os
 from pathlib import Path
 from unittest.mock import patch
-from src.models.evaluation_models import DocumentContent
+
+import pytest
+
 from src.config.llm_config import LLMConfig
+from src.models.evaluation_models import DocumentContent
 
 
 @pytest.fixture(scope="session")

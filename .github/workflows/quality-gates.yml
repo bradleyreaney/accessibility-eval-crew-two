@@ -91,7 +91,7 @@ jobs:
         python -c "
         import subprocess
         import sys
-        result = subprocess.run(['python', '-m', 'pytest', 'tests/unit/', '--durations=0', '--tb=no', '-q'], 
+        result = subprocess.run(['python', '-m', 'pytest', 'tests/unit/', '--durations=0', '--tb=no', '-q'],
                               capture_output=True, text=True)
         lines = result.stdout.split('\n')
         slow_tests = [l for l in lines if 'PASSED' in l and any(f'{i}.' in l for i in range(5, 100))]
@@ -108,24 +108,24 @@ jobs:
         import ast
         import sys
         from pathlib import Path
-        
+
         def check_docstrings(file_path):
             with open(file_path, 'r') as f:
                 tree = ast.parse(f.read())
-            
+
             missing = []
             for node in ast.walk(tree):
                 if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
                     if not ast.get_docstring(node):
                         missing.append(f'{file_path}:{node.lineno} - {node.name}')
             return missing
-        
+
         all_missing = []
         for py_file in Path('src').rglob('*.py'):
             if py_file.name != '__init__.py':
                 missing = check_docstrings(py_file)
                 all_missing.extend(missing)
-        
+
         if all_missing:
             print('❌ Missing docstrings:')
             for item in all_missing[:10]:  # Show first 10
@@ -142,7 +142,7 @@ jobs:
       run: |
         echo "🎯 Quality Gates Results:"
         echo "├── ✅ Code Formatting (Black)"
-        echo "├── ✅ Code Linting (Flake8)" 
+        echo "├── ✅ Code Linting (Flake8)"
         echo "├── ✅ Security Scan (Bandit)"
         echo "├── ✅ Unit Tests (90%+ Coverage)"
         echo "├── ✅ Performance (<5s per test)"

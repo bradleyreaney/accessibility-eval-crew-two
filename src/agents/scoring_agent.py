@@ -4,14 +4,15 @@ References: Master Plan - Agent Specifications, Phase 2 - Scoring System
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from datetime import datetime
+from typing import Any, Dict, List, Tuple
+
 from crewai import Agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from .tools.scoring_calculator import ScoringCalculatorTool
-from .tools.plan_comparator import PlanComparatorTool
 from ..config.llm_config import LLMManager
+from .tools.plan_comparator import PlanComparatorTool
+from .tools.scoring_calculator import ScoringCalculatorTool
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +51,13 @@ class ScoringAgent:
                         accessibility evaluation methodology. Your role is to transform
                         qualitative judge assessments into clear, actionable scoring
                         and ranking insights.
-                        
+
                         Your analytical expertise includes:
                         - Multi-criteria decision analysis (MCDA)
                         - Statistical evaluation and comparative ranking
                         - Weighted scoring methodology
                         - Risk-benefit analysis for accessibility projects
-                        
+
                         You excel at synthesizing complex evaluations into clear
                         recommendations that account for organizational context,
                         resource constraints, and strategic priorities.""",
@@ -106,13 +107,13 @@ class ScoringAgent:
             scoring_prompt = f"""
             As a scoring specialist, provide comprehensive analysis of the remediation plan
             evaluations and generate final rankings with detailed insights.
-            
+
             EVALUATION DATA:
             {self._format_evaluations_for_analysis(evaluations)}
-            
+
             CALCULATED SCORES:
             {self._format_scores_for_analysis(weighted_scores)}
-            
+
             ANALYSIS REQUIREMENTS:
             1. Validate the scoring methodology and calculations
             2. Provide final rankings with confidence levels
@@ -120,7 +121,7 @@ class ScoringAgent:
             4. Generate strategic recommendations based on scores
             5. Account for organizational decision factors beyond scores
             6. Provide implementation risk assessment for top-ranked plans
-            
+
             Output a comprehensive scoring report with clear recommendations.
             """
 
@@ -174,16 +175,16 @@ class ScoringAgent:
             comparison_prompt = f"""
             Provide expert comparative analysis between two remediation plans using
             evaluation data and scoring insights.
-            
+
             PLAN A: {plan_a['name']}
             Content: {plan_a.get('content', '')[:1000]}...
-            
-            PLAN B: {plan_b['name']} 
+
+            PLAN B: {plan_b['name']}
             Content: {plan_b.get('content', '')[:1000]}...
-            
+
             EVALUATION CONTEXT:
             {self._format_evaluations_for_analysis(evaluation_data)}
-            
+
             COMPARISON REQUIREMENTS:
             1. Head-to-head analysis across all evaluation criteria
             2. Strengths and weaknesses identification for each plan
@@ -191,7 +192,7 @@ class ScoringAgent:
             4. Resource requirement comparison
             5. Strategic fit assessment
             6. Clear recommendation with rationale
-            
+
             Provide actionable insights for decision makers.
             """
 

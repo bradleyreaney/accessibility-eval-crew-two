@@ -4,7 +4,8 @@ References: Master Plan - Comparative Analysis, Phase 2 - Multi-Plan Evaluation
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
+from typing import Any, Dict, List, Tuple
+
 from crewai_tools import BaseTool
 from pydantic import BaseModel, Field
 

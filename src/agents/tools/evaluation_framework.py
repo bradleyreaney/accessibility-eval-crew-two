@@ -5,11 +5,12 @@ References: Master Plan - Evaluation Framework, promt/eval-prompt.md
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
 from crewai_tools import BaseTool
 from pydantic import BaseModel, Field
 
-from ...models.evaluation_models import EvaluationCriteria, DocumentContent
+from ...models.evaluation_models import DocumentContent, EvaluationCriteria
 from ...tools.prompt_manager import PromptManager
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class EvaluationFrameworkTool(BaseTool):
     name: str = "evaluation_framework"
     description: str = """
     Apply the standardized evaluation framework to assess a remediation plan.
-    This tool evaluates plans against the 4 weighted criteria established in 
+    This tool evaluates plans against the 4 weighted criteria established in
     the evaluation framework and provides structured scoring.
     """
     args_schema: type[BaseModel] = EvaluationFrameworkInput
@@ -46,7 +47,7 @@ class EvaluationFrameworkTool(BaseTool):
         super().__init__(
             name="evaluation_framework",
             description="""Apply the standardized evaluation framework to assess a remediation plan.
-            This tool evaluates plans against the 4 weighted criteria established in 
+            This tool evaluates plans against the 4 weighted criteria established in
             the evaluation framework and provides structured scoring.""",
         )
         # Get the path to the evaluation prompt

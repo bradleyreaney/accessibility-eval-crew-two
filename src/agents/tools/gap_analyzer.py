@@ -4,7 +4,8 @@ References: Master Plan - Gap Analysis, Phase 2 - Comprehensive Evaluation
 """
 
 import logging
-from typing import Dict, List, Any, Set
+from typing import Any, Dict, List, Set
+
 from crewai_tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -70,12 +71,12 @@ class GapAnalyzerTool(BaseTool):
     def _run(self, plan_content: str, audit_content: str, plan_name: str) -> str:
         """
         Analyze gaps in remediation plan coverage.
-        
+
         Args:
             plan_content: Full text content of the remediation plan
             audit_content: Full text content of the audit report
             plan_name: Name of the plan being analyzed
-            
+
         Returns:
             Detailed gap analysis report
         """
@@ -85,19 +86,27 @@ class GapAnalyzerTool(BaseTool):
             # Simplified gap analysis for validation
             plan_lower = plan_content.lower()
             audit_lower = audit_content.lower()
-            
+
             # Basic coverage assessment
             covered_issues = 0
-            total_issues = max(1, len([line for line in audit_content.split("\n") if line.strip()]))
-            
+            total_issues = max(
+                1, len([line for line in audit_content.split("\n") if line.strip()])
+            )
+
             # Simple keyword matching for demo purposes
-            accessibility_keywords = ['keyboard', 'contrast', 'alt text', 'headings', 'focus']
+            accessibility_keywords = [
+                "keyboard",
+                "contrast",
+                "alt text",
+                "headings",
+                "focus",
+            ]
             for keyword in accessibility_keywords:
                 if keyword in audit_lower and keyword in plan_lower:
                     covered_issues += 1
-            
+
             coverage_percentage = (covered_issues / len(accessibility_keywords)) * 100
-            
+
             # Generate gap analysis report
             gap_report = f"""GAP ANALYSIS REPORT for {plan_name}
 =============================================
@@ -112,9 +121,9 @@ The plan addresses {covered_issues} out of {len(accessibility_keywords)} key acc
 RECOMMENDATIONS:
 {"Good coverage of accessibility requirements." if coverage_percentage > 60 else "Consider addressing additional accessibility requirements."}
 """
-            
+
             return gap_report
-            
+
         except Exception as e:
             logger.error(f"Gap analysis failed for {plan_name}: {e}")
             return f"Error: Failed to analyze gaps for {plan_name}: {str(e)}"

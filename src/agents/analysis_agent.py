@@ -4,14 +4,15 @@ References: Master Plan - Agent Specifications, Phase 2 - Strategic Analysis
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from crewai import Agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from ..config.llm_config import LLMManager
 from .tools.gap_analyzer import GapAnalyzerTool
 from .tools.plan_comparator import PlanComparatorTool
-from ..config.llm_config import LLMManager
 
 logger = logging.getLogger(__name__)
 
@@ -50,14 +51,14 @@ class AnalysisAgent:
                         large-scale accessibility transformation projects. Your expertise
                         spans organizational change management, technical project delivery,
                         and accessibility program development.
-                        
+
                         Your strategic perspective includes:
                         - Enterprise-scale accessibility program implementation
                         - Change management and stakeholder alignment strategies
                         - Risk assessment and mitigation planning
                         - Resource optimization and timeline management
                         - Success metrics and measurement frameworks
-                        
+
                         You excel at translating evaluation insights into actionable
                         strategic roadmaps that consider organizational culture, technical
                         constraints, and business objectives.""",
@@ -98,50 +99,50 @@ class AnalysisAgent:
             analysis_prompt = f"""
             As a strategic accessibility implementation analyst, provide comprehensive
             analysis and actionable recommendations based on the evaluation results.
-            
+
             EVALUATION SUMMARY:
             {self._format_evaluations_summary(evaluations)}
-            
+
             SCORING RESULTS:
             {self._format_scoring_summary(scoring_results)}
-            
+
             {"ORGANIZATIONAL CONTEXT:" if organizational_context else ""}
             {self._format_organizational_context(organizational_context) if organizational_context else ""}
-            
+
             STRATEGIC ANALYSIS REQUIREMENTS:
-            
+
             1. EXECUTIVE SUMMARY
                - Key findings and primary recommendation
                - Strategic rationale for plan selection
                - Critical success factors
-            
+
             2. IMPLEMENTATION ROADMAP
                - Phased implementation approach
                - Resource requirements and timeline
                - Key milestones and dependencies
                - Risk mitigation strategies
-            
+
             3. ORGANIZATIONAL CONSIDERATIONS
                - Change management requirements
                - Stakeholder alignment strategies
                - Training and capability building needs
                - Communication and engagement plan
-            
+
             4. SUCCESS METRICS
                - KPIs for tracking progress
                - Measurement framework
                - Review and adjustment mechanisms
-            
+
             5. RISK ASSESSMENT
                - Implementation risks and mitigation
                - Contingency planning
                - Quality assurance approaches
-            
+
             6. ALTERNATIVE SCENARIOS
                - If top choice fails, what's the fallback?
                - How to optimize lower-ranked plans
                - Hybrid approach possibilities
-            
+
             Provide strategic insights that enable confident decision-making and successful implementation.
             """
 
@@ -196,47 +197,47 @@ class AnalysisAgent:
             readiness_prompt = f"""
             Assess the implementation readiness and provide actionable guidance for
             executing the recommended accessibility remediation plan.
-            
+
             RECOMMENDED PLAN: {recommended_plan}
-            
+
             PLAN CONTENT:
             {plan_content[:2000]}...
-            
+
             EVALUATION CONTEXT:
             {self._format_evaluations_summary(evaluation_data)}
-            
+
             READINESS ASSESSMENT REQUIREMENTS:
-            
+
             1. IMMEDIATE ACTIONS
                - What can start immediately?
                - Prerequisites that must be completed first
                - Quick wins to build momentum
-            
+
             2. RESOURCE REQUIREMENTS
                - Team composition and skills needed
                - Technology and tool requirements
                - Budget considerations and cost optimization
-            
+
             3. TIMELINE ANALYSIS
                - Realistic timeline estimates
                - Critical path dependencies
                - Opportunities for parallel execution
-            
+
             4. RISK FACTORS
                - Technical implementation risks
                - Organizational resistance points
                - External dependency risks
-            
+
             5. SUCCESS ENABLERS
                - Factors that will accelerate success
                - Stakeholder engagement strategies
                - Communication and training needs
-            
+
             6. MEASUREMENT APPROACH
                - How to track progress
                - Success criteria and KPIs
                - Review and adjustment triggers
-            
+
             Provide practical, actionable guidance for successful implementation.
             """
 
@@ -284,34 +285,34 @@ class AnalysisAgent:
             executive_prompt = f"""
             Create a concise executive summary for organizational leadership to support
             accessibility remediation plan decision-making.
-            
+
             ANALYSIS DATA:
             {self._format_complete_analysis(all_analysis_data)}
-            
+
             EXECUTIVE SUMMARY REQUIREMENTS:
-            
+
             1. SITUATION OVERVIEW (2-3 sentences)
                - Current accessibility challenges
                - Options evaluated
-            
+
             2. RECOMMENDATION (1-2 sentences)
                - Primary recommended approach
                - Key rationale
-            
+
             3. EXPECTED OUTCOMES (3-4 bullet points)
                - Accessibility improvements achieved
                - Timeline for results
                - Resource investment required
-            
+
             4. NEXT STEPS (3-4 bullet points)
                - Immediate actions required
                - Key decisions needed
                - Success enablers
-            
+
             5. RISK CONSIDERATIONS (2-3 bullet points)
                - Primary risks and mitigation
                - Contingency planning
-            
+
             Keep the summary to 1 page, focused on decision-making insights.
             """
 

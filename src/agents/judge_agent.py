@@ -4,15 +4,16 @@ References: Master Plan - Agent Specifications, Phase 2 - Core Agents
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from crewai import Agent, Task
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from .tools.evaluation_framework import EvaluationFrameworkTool
-from .tools.scoring_calculator import ScoringCalculatorTool
-from .tools.gap_analyzer import GapAnalyzerTool
 from ..config.llm_config import LLMManager
+from .tools.evaluation_framework import EvaluationFrameworkTool
+from .tools.gap_analyzer import GapAnalyzerTool
+from .tools.scoring_calculator import ScoringCalculatorTool
 
 logger = logging.getLogger(__name__)
 
@@ -45,26 +46,26 @@ class PrimaryJudgeAgent:
         """Create the primary judge agent with proper configuration"""
         return Agent(
             role="Expert Accessibility Consultant - Primary Judge",
-            goal="""Provide comprehensive evaluation of remediation plans using the 
+            goal="""Provide comprehensive evaluation of remediation plans using the
                    established framework from promt/eval-prompt.md with weighted criteria:
                    - Strategic Prioritization (40%)
-                   - Technical Specificity (30%) 
+                   - Technical Specificity (30%)
                    - Comprehensiveness (20%)
                    - Long-term Vision (10%)
-                   
+
                    Deliver thorough, evidence-based assessments that help organizations
                    choose the most effective accessibility remediation approach.""",
             backstory="""You are a senior accessibility consultant with 15+ years of experience
-                        implementing WCAG 2.1/2.2 standards across diverse organizations. 
-                        You have guided Fortune 500 companies, government agencies, and 
+                        implementing WCAG 2.1/2.2 standards across diverse organizations.
+                        You have guided Fortune 500 companies, government agencies, and
                         startups through complex accessibility transformations.
-                        
+
                         Your expertise combines:
                         - Deep technical knowledge of web standards and assistive technologies
-                        - Strategic thinking about organizational change and resource allocation  
+                        - Strategic thinking about organizational change and resource allocation
                         - Practical experience with real-world implementation challenges
                         - User-centered perspective informed by disability community feedback
-                        
+
                         You evaluate remediation plans not just for technical correctness,
                         but for strategic coherence, implementation feasibility, and genuine
                         impact on users with disabilities. You think like a senior developer,
@@ -109,32 +110,32 @@ class PrimaryJudgeAgent:
                 description=f"""
                 Evaluate {plan_name} for accessibility remediation effectiveness using the
                 established evaluation framework.
-                
+
                 CONTEXT (Original Audit):
                 {audit_context[:2000]}...
-                
+
                 PLAN TO EVALUATE ({plan_name}):
                 {plan_content[:3000]}...
-                
+
                 EVALUATION REQUIREMENTS:
                 1. Apply each weighted criterion systematically:
                    - Strategic Prioritization (40%): Risk-based sequencing, critical path analysis
                    - Technical Specificity (30%): Implementation detail, clarity, feasibility
                    - Comprehensiveness (20%): Coverage of audit findings, completeness
                    - Long-term Vision (10%): Sustainability, maintenance, scalability
-                
+
                 2. For each criterion, provide:
                    - Score (1-10 scale)
                    - Detailed reasoning (2-3 sentences minimum)
                    - Specific evidence from the plan
                    - Areas for improvement
-                
+
                 3. Calculate weighted final score
-                
+
                 4. Provide overall assessment with strengths and weaknesses
-                
+
                 5. Make specific recommendations for improvement
-                
+
                 Use the evaluation_framework tool to structure your analysis.
                 Use the gap_analyzer tool to identify missing elements.
                 Use the scoring_calculator tool for weighted score calculations.
@@ -144,7 +145,7 @@ class PrimaryJudgeAgent:
                 Comprehensive evaluation report with:
                 - Individual criterion scores and reasoning
                 - Weighted overall score
-                - Strengths and weaknesses analysis  
+                - Strengths and weaknesses analysis
                 - Gap analysis findings
                 - Specific improvement recommendations
                 """,
@@ -155,28 +156,28 @@ class PrimaryJudgeAgent:
             # For now, we'll use the agent's LLM directly for evaluation
 
             evaluation_prompt = f"""
-            As an expert accessibility consultant, evaluate {plan_name} using the 
+            As an expert accessibility consultant, evaluate {plan_name} using the
             comprehensive framework established in promt/eval-prompt.md.
-            
+
             CONTEXT (Original Audit):
             {audit_context[:2000]}...
-            
+
             PLAN TO EVALUATE ({plan_name}):
             {plan_content[:3000]}...
-            
+
             EVALUATION REQUIREMENTS:
             1. Apply each weighted criterion systematically:
                - Strategic Prioritization (40%): Risk-based sequencing, critical path analysis
                - Technical Specificity (30%): Implementation detail, clarity, feasibility
                - Comprehensiveness (20%): Coverage of audit findings, completeness
                - Long-term Vision (10%): Sustainability, maintenance, scalability
-            
+
             2. For each criterion, provide:
                - Score (1-10 scale)
                - Detailed reasoning (2-3 sentences minimum)
                - Specific evidence from the plan
                - Areas for improvement
-            
+
             3. Calculate weighted final score
             4. Provide overall assessment with strengths and weaknesses
             5. Make specific recommendations for improvement
@@ -225,12 +226,12 @@ class PrimaryJudgeAgent:
         """
         return Task(
             description=f"""
-            As an expert accessibility consultant, evaluate {plan_name} using the 
+            As an expert accessibility consultant, evaluate {plan_name} using the
             comprehensive framework established in promt/eval-prompt.md.
-            
+
             Your evaluation must cover all weighted criteria with detailed analysis,
             evidence-based scoring, and actionable recommendations.
-            
+
             Plan Content: {plan_content[:1000]}...
             Audit Context: {audit_context[:1000]}...
             """,
@@ -285,13 +286,13 @@ class SecondaryJudgeAgent:
                         in objective evaluation and quality assurance. Your role is to
                         provide a fresh perspective on remediation plans, validating
                         or challenging the primary assessment through rigorous analysis.
-                        
+
                         You bring complementary expertise in:
                         - Alternative evaluation methodologies and frameworks
                         - Cross-industry accessibility implementation patterns
                         - Risk assessment and mitigation strategies
                         - Quality assurance and validation processes
-                        
+
                         Your independent evaluation helps ensure that final decisions
                         are well-informed and consider multiple expert perspectives.""",
             verbose=True,
@@ -335,34 +336,34 @@ class SecondaryJudgeAgent:
             logger.info(f"Secondary judge evaluating {plan_name}")
 
             evaluation_prompt = f"""
-            As an independent accessibility consultant, provide a thorough evaluation 
+            As an independent accessibility consultant, provide a thorough evaluation
             of {plan_name} using the established framework from promt/eval-prompt.md.
-            
+
             Your role is to offer an independent second opinion that validates or
             challenges assessments through rigorous analysis.
-            
+
             CONTEXT (Original Audit):
             {audit_context[:2000]}...
-            
+
             PLAN TO EVALUATE ({plan_name}):
             {plan_content[:3000]}...
-            
+
             {"PRIMARY EVALUATION FOR REFERENCE:" if primary_evaluation else ""}
             {primary_evaluation[:1000] if primary_evaluation else ""}
-            
+
             INDEPENDENT EVALUATION REQUIREMENTS:
             1. Apply the same weighted criteria independently:
                - Strategic Prioritization (40%)
                - Technical Specificity (30%)
-               - Comprehensiveness (20%) 
+               - Comprehensiveness (20%)
                - Long-term Vision (10%)
-            
+
             2. Provide your independent assessment with:
                - Objective scoring and reasoning
                - Alternative perspectives where applicable
                - Validation or constructive challenge of other viewpoints
                - Focus on aspects that may have been overlooked
-            
+
             3. Offer recommendations that complement the overall evaluation
             """
 

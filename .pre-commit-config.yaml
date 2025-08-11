@@ -1,0 +1,42 @@
+# Pre-commit hooks for essential code quality
+# Focuses on formatting and basic checks only
+
+repos:
+  # Black - Python code formatter
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        args: [--line-length=88]
+        language_version: python3
+
+  # isort - Import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=88]
+
+  # Basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^.*\.md$
+      - id: end-of-file-fixer
+        exclude: ^.*\.md$
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+
+  # Pytest runner (optional - commented out for faster commits)
+  # Uncomment to run tests on every commit:
+  # - repo: local
+  #   hooks:
+  #     - id: pytest-check
+  #       name: pytest-check
+  #       entry: python -m pytest tests/unit/ -x --tb=short -q --disable-warnings
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true

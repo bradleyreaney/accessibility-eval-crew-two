@@ -2,9 +2,11 @@
 Tests for LLM configuration and connections
 """
 
-import pytest
 import os
 from unittest.mock import Mock, patch
+
+import pytest
+
 from src.config.llm_config import LLMConfig, LLMManager
 
 
