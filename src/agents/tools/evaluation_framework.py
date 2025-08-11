@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
-from crewai_tools.tools.base_tool import BaseTool
+from crewai_tools import BaseTool
 from pydantic import BaseModel, Field
 
 from ...models.evaluation_models import DocumentContent, EvaluationCriteria

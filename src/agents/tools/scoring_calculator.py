@@ -6,7 +6,7 @@ References: Master Plan - Scoring System, Phase 2 - Tool Implementation
 import logging
 from typing import Any, Dict, List, Optional
 
-from crewai_tools.tools.base_tool import BaseTool
+from crewai_tools import BaseTool
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
