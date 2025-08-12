@@ -9,7 +9,7 @@ on:
 jobs:
   quality-gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Prevent runaway jobs
+    timeout-minutes: 30  # Increased timeout for dependency resolution
     strategy:
       fail-fast: false  # Don't cancel other jobs if one fails
       matrix:
@@ -35,8 +35,13 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-test.txt
+        # Configure pip for faster, more reliable installation
+        pip config set global.timeout 60
+        pip config set global.retries 3
+        # Use minimal CI dependencies for faster installation
+        pip install -r requirements-ci.txt
+        # Install additional tools only as needed
+        pip install mypy bandit
 
     - name: Code Quality - Black Formatting Check
       run: |
