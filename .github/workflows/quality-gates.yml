@@ -40,8 +40,6 @@ jobs:
         pip config set global.retries 3
         # Use minimal CI dependencies for faster installation
         pip install -r requirements-ci.txt
-        # Install additional tools only as needed
-        pip install mypy bandit
 
     - name: Code Quality - Black Formatting Check
       run: |
@@ -56,7 +54,6 @@ jobs:
     - name: Type Checking - mypy
       timeout-minutes: 5  # Prevent mypy hangs
       run: |
-        pip install mypy types-requests
         mypy src/ --ignore-missing-imports --no-strict-optional
       continue-on-error: true  # Allow to pass while we improve type coverage
 
