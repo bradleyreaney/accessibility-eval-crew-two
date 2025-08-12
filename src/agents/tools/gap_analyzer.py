@@ -6,7 +6,7 @@ References: Master Plan - Gap Analysis, Phase 2 - Comprehensive Evaluation
 import logging
 from typing import Any, Dict, List, Set
 
-from crewai_tools import BaseTool
+from crewai_tools.tools.base_tool import BaseTool
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
