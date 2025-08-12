@@ -3,6 +3,7 @@ Tests for evaluation models
 """
 
 import pytest
+
 from src.models.evaluation_models import (
     DocumentContent,
     EvaluationCriteria,

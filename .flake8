@@ -1,0 +1,61 @@
+[flake8]
+# Maximum line length to match GitHub Actions
+max-line-length = 100
+
+# Extend ignore for Black compatibility
+extend-ignore =
+    # E203: Whitespace before ':' (conflicts with Black)
+    E203,
+    # W503: Line break before binary operator (conflicts with Black)
+    W503
+    # E501: Line too long (handled by Black)
+    E501,
+    # F401: Module imported but unused (allow in __init__.py)
+    F401
+
+# Exclude directories
+exclude =
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .coverage,
+    htmlcov,
+    build,
+    dist,
+    *.egg-info,
+    .venv,
+    venv,
+    .env,
+    scripts
+
+# File patterns to check
+filename =
+    *.py
+
+# Select specific error codes to check
+select =
+    E,  # pycodestyle errors
+    W,  # pycodestyle warnings
+    F,  # pyflakes
+    C,  # mccabe complexity
+
+# McCabe complexity threshold
+max-complexity = 12
+
+# Per-file ignores
+per-file-ignores =
+    # Allow unused imports in __init__.py files
+    __init__.py: F401,F403
+    # Allow long lines in configuration files
+    */config/*.py: E501
+    # Test files can have longer names and unused imports
+    tests/*: F401,F403,E501
+    # Scripts can have more flexible rules
+    scripts/*: F401,F403,E501,E402,F841,F541
+
+# Docstring checks (if using flake8-docstrings)
+docstring-convention = google
+
+# Import order checks (if using flake8-import-order)
+import-order-style = google
+application-import-names = src

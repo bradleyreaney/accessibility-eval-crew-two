@@ -15,7 +15,7 @@
 
 ## Component Overview
 
-### Phase 1: Foundation Components
+### Phase 1: Foundation Components (✅ Complete)
 
 #### Data Processing Layer
 - **PDF Parser**: Extracts content from audit reports and remediation plans
@@ -48,7 +48,53 @@
   - `ReportSection`: Individual report sections
   - `ChartConfig`: Visualization configuration
 
-### Data Flow
+### Phase 2: Agent Layer (✅ Complete)
+
+#### Core Agents (`src/agents/`)
+- **Primary Judge Agent**: Main evaluation agent using Gemini Pro
+  - Comprehensive accessibility expertise evaluation
+  - Structured scoring with detailed reasoning
+  - Integration with evaluation framework tools
+
+- **Secondary Judge Agent**: Validation agent using GPT-4  
+  - Independent evaluation for cross-validation
+  - Alternative perspective on plan quality
+  - Bias reduction through dual-LLM approach
+
+- **Scoring Agent**: Comparative analysis and ranking
+  - MCDA-based weighted scoring calculations
+  - Comparative ranking across multiple plans
+  - Statistical analysis and score normalization
+
+- **Analysis Agent**: Strategic insights and implementation guidance
+  - Strategic analysis of evaluation outcomes
+  - Implementation readiness assessment
+  - Executive summary generation
+
+#### Agent Tools (`src/agents/tools/`)
+- **Evaluation Framework Tool**: Integration with evaluation criteria
+  - Loads 4 weighted criteria (40/30/20/10% distribution)
+  - Generates evaluation prompts with injected content
+  - Applies framework consistently across evaluations
+
+- **Scoring Calculator Tool**: Weighted scoring computations
+  - MCDA methodology implementation  
+  - Normalized scoring across criteria
+  - Ranking generation with confidence intervals
+
+- **Gap Analyzer Tool**: WCAG compliance gap analysis
+  - Identifies specific WCAG guideline gaps
+  - Severity assessment and impact analysis
+  - Remediation priority recommendations
+
+- **Plan Comparator Tool**: Head-to-head plan comparison
+  - Side-by-side comparative analysis
+  - Strength/weakness identification
+  - Relative performance assessment
+
+## Current Architecture Status (Phase 2 Complete)
+
+### Data Flow (Updated)
 
 1. **Input Processing**
    ```
@@ -56,37 +102,44 @@
    Eval Prompt → Prompt Manager → Structured Criteria
    ```
 
-2. **LLM Integration**
+2. **Agent Processing (NEW)**
    ```
-   DocumentContent + Criteria → LLM Manager → Structured Evaluations
+   DocumentContent + Criteria → Agent Tools → Formatted Evaluations
+   Evaluation Prompts → Judge Agents → Structured Assessments
+   Raw Scores → Scoring Agent → Weighted Rankings
    ```
 
-3. **Output Generation**
+3. **LLM Integration**
    ```
-   Evaluations → Report Generator → PDF Reports
+   Agent Prompts → LLM Manager → Multi-LLM Responses
+   Gemini Pro (Primary + Scoring) + GPT-4 (Secondary + Analysis)
+   ```
+
+4. **Output Generation**
+   ```
+   Agent Evaluations → Report Generator → PDF Reports (Ready for Phase 3)
    ```
 
 ### Configuration Management
 
 - **Environment Variables**: API keys, paths, and settings
-- **LLM Configuration**: Model settings, timeouts, retry logic
+- **LLM Configuration**: Model settings, timeouts, retry logic  
+- **Agent Configuration**: Role definitions, tool assignments
 - **Validation**: Input validation and error handling
 
-### Testing Architecture
+### Testing Architecture (Updated)
 
-- **Unit Tests**: Individual component testing with mocks
+- **Unit Tests**: Individual component + agent testing with mocks
+- **Agent Tests**: Specialized agent initialization and tool validation
 - **Integration Tests**: End-to-end testing with real APIs/files
+- **Demo Scripts**: Complete workflow demonstrations (`scripts/phase2_demo.py`)
 - **TDD Approach**: Test-driven development with Red-Green-Refactor
 
-## Planned Architecture (Future Phases)
+## Next Phase Architecture
 
-### Phase 2: Agent Layer
-- **Primary Judge Agent**: Main evaluation agent using Gemini Pro
-- **Secondary Judge Agent**: Validation agent using GPT-4
-- **Comparison Agent**: Cross-plan analysis and ranking
-
-### Phase 3: Workflow Orchestration
-- **CrewAI Workflows**: Coordinated agent execution
+### Phase 3: Workflow Orchestration (Ready to Begin)
+- **CrewAI Crews**: Coordinated multi-agent workflows
+- **Task Orchestration**: Sequential and parallel agent execution
 - **Consensus Mechanisms**: Multi-judge agreement protocols
 - **Quality Assurance**: Evaluation validation and consistency
 

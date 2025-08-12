@@ -3,10 +3,11 @@ Pydantic models for data validation and structure
 References: Master Plan - Data Models section
 """
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Dict, List
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Dict, List
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class PlanType(str, Enum):

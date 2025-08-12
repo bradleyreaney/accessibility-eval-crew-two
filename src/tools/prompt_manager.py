@@ -3,10 +3,10 @@ Manages integration with existing evaluation framework
 References: Master Plan - Integration with Existing Evaluation Framework
 """
 
+import logging
+import re
 from pathlib import Path
 from typing import Dict, List
-import re
-import logging
 
 logger = logging.getLogger(__name__)
 

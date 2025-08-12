@@ -3,10 +3,11 @@ Pydantic models for PDF report generation
 References: Master Plan - PDF Report Integration
 """
 
-from pydantic import BaseModel, Field
-from typing import Dict, List, Any
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List
+
+from pydantic import BaseModel, Field
 
 
 class ReportType(str, Enum):

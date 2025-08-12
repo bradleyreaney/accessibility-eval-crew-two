@@ -3,10 +3,12 @@ Test-Driven Development for PDF parsing functionality
 Red-Green-Refactor cycle implementation
 """
 
-import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
-from src.tools.pdf_parser import PDFParser, DocumentContent
+
+import pytest
+
+from src.tools.pdf_parser import DocumentContent, PDFParser
 
 
 class TestPDFParserTDD:

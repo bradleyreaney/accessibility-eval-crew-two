@@ -127,7 +127,7 @@ from pathlib import Path
 def check_docstrings(file_path):
     with open(file_path, "r") as f:
         tree = ast.parse(f.read())
-    
+
     missing = []
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.ClassDef)):

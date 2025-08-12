@@ -17,10 +17,12 @@ System design and architecture documentation
 ### 🛠️ `development/`
 Developer guides and setup instructions
 - `setup-guide.md` - Complete environment setup and configuration
-- `coding-standards.md` - Code style guidelines and conventions
-- `testing-guide.md` - Testing patterns and TDD implementation
-- `debugging-guide.md` - Common issues and debugging strategies
-- `copilot-prompts.md` - Effective prompts for AI-assisted development
+- `pre-commit-setup.md` - Pre-commit hooks configuration for code quality
+- `ci-cd-pipeline.md` - CI/CD pipeline overview and configuration
+- `ci-cd-github-actions.md` - Detailed GitHub Actions implementation
+- `phase-reports/` - Development phase completion reports
+- `quality-assurance/` - Code quality, testing, and validation documentation
+- `configurations/` - Alternative configuration files and setups
 
 ### 📚 `api-reference/`
 Component and API documentation
@@ -38,6 +40,8 @@ Code examples and templates
 
 ### 🔧 `troubleshooting/`
 Problem-solving and debugging guides
+- `ci-cd/` - CI/CD pipeline issues and fixes
+- `testing/` - Testing-related troubleshooting and warnings analysis
 - `common-issues.md` - Frequently encountered problems and solutions
 - `llm-debugging.md` - LLM-specific troubleshooting and debugging
 - `performance-issues.md` - Performance optimization and profiling
@@ -132,19 +136,21 @@ Documentation is structured to fit within AI context windows:
 
 ## Phase-Specific Documentation
 
-### Phase 1: Foundation
+### Phase 1: Foundation (✅ Complete)
 - Complete setup and configuration guides
 - Basic architecture and system overview
 - Initial examples and patterns
 - Fundamental troubleshooting information
 
-### Phase 2: Agent Development
+### Phase 2: Agent Development (✅ Complete)
 - Comprehensive agent development guides
-- Tool implementation patterns
+- Tool implementation patterns  
 - Testing strategies for agent behavior
 - LLM integration and debugging
+- Multi-agent coordination patterns
+- Agent tool development and integration
 
-### Phase 3: Workflow Integration
+### Phase 3: Workflow Integration (Ready to Begin)
 - Workflow orchestration documentation
 - Task definition and management
 - Integration testing patterns
@@ -164,8 +170,8 @@ Documentation is structured to fit within AI context windows:
 
 ---
 
-**Last Updated**: August 7, 2025  
-**Version**: 1.0.0  
+**Last Updated**: February 2025  
+**Version**: 2.0.0 (Phase 2 Complete)  
 **Maintained By**: Development Team
 
 For questions or suggestions about this documentation, please refer to the project's main documentation in the `plans/` directory or contact the development team.

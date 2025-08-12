@@ -9,7 +9,9 @@ on:
 jobs:
   quality-gates:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # Increased timeout for dependency resolution
     strategy:
+      fail-fast: false  # Don't cancel other jobs if one fails
       matrix:
         python-version: [3.11, 3.12]
 
@@ -33,8 +35,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-test.txt
+        # Configure pip for faster, more reliable installation
+        pip config set global.timeout 60
+        pip config set global.retries 3
+        # Use minimal CI dependencies for faster installation
+        pip install -r requirements-ci.txt
 
     - name: Code Quality - Black Formatting Check
       run: |
@@ -43,16 +48,17 @@ jobs:
 
     - name: Code Quality - Flake8 Linting
       run: |
-        flake8 src/ tests/ --max-line-length=100 --ignore=E203,W503 --statistics
+        flake8 src/ tests/ --statistics
       continue-on-error: false
 
     - name: Type Checking - mypy
+      timeout-minutes: 5  # Prevent mypy hangs
       run: |
-        pip install mypy types-requests
         mypy src/ --ignore-missing-imports --no-strict-optional
       continue-on-error: true  # Allow to pass while we improve type coverage
 
     - name: Security Scan - bandit
+      timeout-minutes: 5  # Prevent security scan hangs
       run: |
         pip install bandit
         bandit -r src/ -f json -o bandit-report.json || true
@@ -60,22 +66,26 @@ jobs:
       continue-on-error: false
 
     - name: Unit Tests with Coverage
+      timeout-minutes: 10  # Prevent test hangs
       run: |
-        python -m pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=90
+        python -m pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=90 --tb=short
       env:
         PYTHONPATH: ${{ github.workspace }}/src
 
     - name: Upload Coverage to Codecov
+      timeout-minutes: 3  # Prevent upload hangs
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
+        fail_ci_if_error: false  # Don't fail if codecov is down
 
     - name: Integration Tests (if API keys available)
+      timeout-minutes: 10  # Prevent integration test hangs
       run: |
         if [ -n "${{ secrets.GOOGLE_API_KEY }}" ] && [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
-          python -m pytest tests/integration/ -v --llm
+          python -m pytest tests/integration/ -v --llm --tb=short
         else
           echo "⚠️  Integration tests skipped - API keys not configured"
         fi
@@ -91,7 +101,7 @@ jobs:
         python -c "
         import subprocess
         import sys
-        result = subprocess.run(['python', '-m', 'pytest', 'tests/unit/', '--durations=0', '--tb=no', '-q'], 
+        result = subprocess.run(['python', '-m', 'pytest', 'tests/unit/', '--durations=0', '--tb=no', '-q'],
                               capture_output=True, text=True)
         lines = result.stdout.split('\n')
         slow_tests = [l for l in lines if 'PASSED' in l and any(f'{i}.' in l for i in range(5, 100))]
@@ -108,24 +118,24 @@ jobs:
         import ast
         import sys
         from pathlib import Path
-        
+
         def check_docstrings(file_path):
             with open(file_path, 'r') as f:
                 tree = ast.parse(f.read())
-            
+
             missing = []
             for node in ast.walk(tree):
                 if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
                     if not ast.get_docstring(node):
                         missing.append(f'{file_path}:{node.lineno} - {node.name}')
             return missing
-        
+
         all_missing = []
         for py_file in Path('src').rglob('*.py'):
             if py_file.name != '__init__.py':
                 missing = check_docstrings(py_file)
                 all_missing.extend(missing)
-        
+
         if all_missing:
             print('❌ Missing docstrings:')
             for item in all_missing[:10]:  # Show first 10
@@ -141,11 +151,12 @@ jobs:
       if: always()
       run: |
         echo "🎯 Quality Gates Results:"
-        echo "├── ✅ Code Formatting (Black)"
-        echo "├── ✅ Code Linting (Flake8)" 
-        echo "├── ✅ Security Scan (Bandit)"
-        echo "├── ✅ Unit Tests (90%+ Coverage)"
-        echo "├── ✅ Performance (<5s per test)"
-        echo "└── ✅ Documentation Check"
+        echo "This summary shows hardcoded success messages."
+        echo "Check individual step results above for actual status."
+        echo "Pipeline will fail if any critical step fails."
         echo ""
-        echo "🚀 Ready for Phase 2 development!"
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "🚀 All quality gates passed - Ready for deployment!"
+        else
+          echo "❌ Some quality gates failed - Review errors above"
+        fi

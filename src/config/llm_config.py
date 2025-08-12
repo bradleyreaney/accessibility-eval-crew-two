@@ -3,12 +3,13 @@ LLM configuration and connection management
 References: Master Plan - LLM Integration section
 """
 
+import logging
 import os
-from typing import Optional, Dict
+from typing import Dict, Optional
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-import logging
 
 logger = logging.getLogger(__name__)
 

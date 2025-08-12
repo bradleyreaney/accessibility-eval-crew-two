@@ -2,9 +2,11 @@
 Tests for prompt manager functionality
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
+
+import pytest
+
 from src.tools.prompt_manager import PromptManager
 
 

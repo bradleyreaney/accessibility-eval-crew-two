@@ -3,10 +3,12 @@ PDF parsing tools for audit reports and remediation plans
 References: Master Plan - Data Processing section
 """
 
-import pdfplumber
+import logging
 from pathlib import Path
 from typing import Dict, Optional
-import logging
+
+import pdfplumber
+
 from ..models.evaluation_models import DocumentContent
 
 logger = logging.getLogger(__name__)
