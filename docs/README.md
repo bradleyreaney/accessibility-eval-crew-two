@@ -17,10 +17,12 @@ System design and architecture documentation
 ### 🛠️ `development/`
 Developer guides and setup instructions
 - `setup-guide.md` - Complete environment setup and configuration
-- `coding-standards.md` - Code style guidelines and conventions
-- `testing-guide.md` - Testing patterns and TDD implementation
-- `debugging-guide.md` - Common issues and debugging strategies
-- `copilot-prompts.md` - Effective prompts for AI-assisted development
+- `pre-commit-setup.md` - Pre-commit hooks configuration for code quality
+- `ci-cd-pipeline.md` - CI/CD pipeline overview and configuration
+- `ci-cd-github-actions.md` - Detailed GitHub Actions implementation
+- `phase-reports/` - Development phase completion reports
+- `quality-assurance/` - Code quality, testing, and validation documentation
+- `configurations/` - Alternative configuration files and setups
 
 ### 📚 `api-reference/`
 Component and API documentation
@@ -38,6 +40,8 @@ Code examples and templates
 
 ### 🔧 `troubleshooting/`
 Problem-solving and debugging guides
+- `ci-cd/` - CI/CD pipeline issues and fixes
+- `testing/` - Testing-related troubleshooting and warnings analysis
 - `common-issues.md` - Frequently encountered problems and solutions
 - `llm-debugging.md` - LLM-specific troubleshooting and debugging
 - `performance-issues.md` - Performance optimization and profiling
