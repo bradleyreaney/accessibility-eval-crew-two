@@ -1,9 +1,9 @@
 """
-Task definitions package for CrewAI workflow integration.
-Phase 3 implementation: Task management for evaluation, comparison, and synthesis.
+Task management for accessibility evaluation workflow.
 """
 
 from .comparison_tasks import ComparisonTaskManager
 from .evaluation_tasks import EvaluationTaskManager
+from .synthesis_tasks import SynthesisTaskManager
 
-__all__ = ["EvaluationTaskManager", "ComparisonTaskManager"]
+__all__ = ["EvaluationTaskManager", "ComparisonTaskManager", "SynthesisTaskManager"]
