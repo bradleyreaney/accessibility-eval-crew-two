@@ -8,6 +8,10 @@ pydantic==2.7.4
 pandas==2.1.4
 pdfplumber==0.11.0
 
+# Phase 4 UI dependencies (needed for tests)
+streamlit==1.38.0
+plotly==5.24.1
+
 # Testing essentials only
 pytest==8.4.1
 pytest-cov==6.2.1
