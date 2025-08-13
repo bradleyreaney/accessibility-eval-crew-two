@@ -3,18 +3,25 @@ Main Streamlit application for LLM as a Judge system
 Phase 4 Implementation - Core UI functionality
 """
 
+import sys
 from pathlib import Path
 from typing import Optional
 
 import streamlit as st
 
+# Add the project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 # Import our core system components
-from src.config.crew_config import AccessibilityEvaluationCrew
-from src.config.llm_config import LLMConfig, LLMManager
-from src.models.evaluation_models import DocumentContent, EvaluationInput
-from src.reports.generators.evaluation_report_generator import EvaluationReportGenerator
-from src.tools.pdf_parser import PDFParser
-from src.utils.workflow_controller import WorkflowController
+from src.config.crew_config import AccessibilityEvaluationCrew  # noqa: E402
+from src.config.llm_config import LLMConfig, LLMManager  # noqa: E402
+from src.models.evaluation_models import DocumentContent, EvaluationInput  # noqa: E402
+from src.reports.generators.evaluation_report_generator import (  # noqa: E402
+    EvaluationReportGenerator,
+)
+from src.tools.pdf_parser import PDFParser  # noqa: E402
+from src.utils.workflow_controller import WorkflowController  # noqa: E402
 
 # Page configuration
 st.set_page_config(
