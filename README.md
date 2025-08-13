@@ -2,8 +2,8 @@
 
 *An enterprise-grade AI system for evaluating accessibility remediation plans using multi-agent LLM workflows*
 
-[![Tests](https://img.shields.io/badge/tests-68%20passed-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-32.20%25-red)]()
+[![Tests](https://img.shields.io/badge/tests-212%20passed-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)]()
 [![Phase](https://img.shields.io/badge/phase-2%20complete-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11+-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
@@ -12,7 +12,11 @@
 
 This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments.
 
+<<<<<<< Updated upstream
 **Status: Phase 2 COMPLETE** - Core agent evaluation system fully implemented and operational (August 2025).
+=======
+**Status: Phase 2 COMPLETE** - Core agents and multi-agent workflows with 91% test coverage (August 2025).
+>>>>>>> Stashed changes
 
 ### Key Features
 - 🤖 **Multi-Agent Evaluation**: 4 specialized CrewAI agents with Gemini Pro & GPT-4
@@ -81,8 +85,20 @@ accessibility-eval-crew-two/
 │       ├── scoring_agent.py    # Scoring & Ranking Agent
 │       ├── analysis_agent.py   # Strategic Analysis Agent
 │       └── tools/             # Agent-specific tools
+<<<<<<< Updated upstream
 ├── tests/                 # Comprehensive test suite
 │   ├── unit/              # Fast unit tests (90%+ coverage)
+=======
+├── tests/                 # Comprehensive test suite (90% coverage)
+│   ├── unit/              # Fast unit tests organized by module
+│   │   ├── agents/            # Agent and tool tests
+│   │   ├── config/            # Configuration tests
+│   │   ├── models/            # Data model tests
+│   │   ├── reports/           # Report generation tests
+│   │   ├── tasks/             # Task management tests
+│   │   ├── tools/             # Core tool tests
+│   │   └── utils/             # Utility tests
+>>>>>>> Stashed changes
 │   ├── integration/       # Real file/API integration tests
 │   └── conftest.py        # Test fixtures and configuration
 ├── data/                  # Sample audit reports and plans

@@ -61,11 +61,16 @@ python -m pytest tests/ -W ignore::pytest.PytestUnraisableExceptionWarning
 
 ### Test Debugging
 ```bash
-# Run single test with full output
-python -m pytest tests/unit/test_agents.py::TestAnalysisAgent::test_generate_strategic_analysis -v -s
+# Run single test with full output  
+python -m pytest tests/unit/agents/test_agents.py::TestAnalysisAgent::test_generate_strategic_analysis -v -s
 
 # Run with pdb debugging
-python -m pytest tests/unit/test_agents.py --pdb
+python -m pytest tests/unit/agents/test_agents.py --pdb
+
+# Test specific module
+python -m pytest tests/unit/agents/ -v
+python -m pytest tests/unit/tools/ -v
+python -m pytest tests/unit/config/ -v
 ```
 
 ## Best Practices
