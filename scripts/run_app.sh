@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-"""
-Launch script for the Accessibility Evaluation Streamlit App
-Sets up proper Python path and runs the application
-"""
+# Launch script for the Accessibility Evaluation Streamlit App
+# Sets up proper Python path and runs the application
 
 # Get the directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
