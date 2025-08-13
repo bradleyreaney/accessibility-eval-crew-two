@@ -432,3 +432,85 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             json.dump(export_data, f, indent=2, default=str)
 
         return output_path
+
+    # Specialized report generators for different report types
+    def _generate_executive_summary(
+        self, evaluation_results: Dict[str, Any], output_path: Optional[Path] = None
+    ) -> Path:
+        """Generate executive summary report."""
+        return self.generate_pdf_report(
+            evaluation_results, output_path=output_path, report_type="executive"
+        )
+
+    def _generate_detailed_analysis(
+        self, evaluation_results: Dict[str, Any], output_path: Optional[Path] = None
+    ) -> Path:
+        """Generate detailed analysis report."""
+        return self.generate_pdf_report(
+            evaluation_results, output_path=output_path, report_type="detailed"
+        )
+
+    def _generate_comparison_analysis(
+        self, evaluation_results: Dict[str, Any], output_path: Optional[Path] = None
+    ) -> Path:
+        """Generate comparison analysis report."""
+        return self.generate_pdf_report(
+            evaluation_results, output_path=output_path, report_type="comparative"
+        )
+
+    def _generate_synthesis_recommendations(
+        self, evaluation_results: Dict[str, Any], output_path: Optional[Path] = None
+    ) -> Path:
+        """Generate synthesis recommendations report."""
+        return self.generate_pdf_report(
+            evaluation_results, output_path=output_path, report_type="synthesis"
+        )
+
+    def generate_complete_report_package(
+        self, evaluation_results: Dict[str, Any], output_dir: Optional[Path] = None
+    ) -> Dict[str, Path]:
+        """
+        Generate complete report package with all report types.
+        
+        Args:
+            evaluation_results: Results from evaluation process
+            output_dir: Optional directory for reports
+            
+        Returns:
+            Dictionary mapping report types to file paths
+        """
+        if output_dir is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_dir = self.output_dir / f"complete_package_{timestamp}"
+        
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        report_paths = {}
+        
+        # Generate all report types
+        try:
+            report_paths["executive"] = self._generate_executive_summary(
+                evaluation_results, output_dir / "executive_summary.pdf"
+            )
+            report_paths["detailed"] = self._generate_detailed_analysis(
+                evaluation_results, output_dir / "detailed_analysis.pdf"
+            )
+            report_paths["comparative"] = self._generate_comparison_analysis(
+                evaluation_results, output_dir / "comparison_analysis.pdf"
+            )
+            report_paths["synthesis"] = self._generate_synthesis_recommendations(
+                evaluation_results, output_dir / "synthesis_recommendations.pdf"
+            )
+            
+            # Generate export files
+            report_paths["csv"] = self.generate_csv_export(
+                evaluation_results, output_dir / "evaluation_data.csv"
+            )
+            report_paths["json"] = self.generate_json_export(
+                evaluation_results, output_dir / "evaluation_data.json"
+            )
+            
+        except Exception as e:
+            raise Exception(f"Failed to generate complete report package: {e}")
+        
+        return report_paths
