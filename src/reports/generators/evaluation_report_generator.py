@@ -471,22 +471,22 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
     ) -> Dict[str, Path]:
         """
         Generate complete report package with all report types.
-        
+
         Args:
             evaluation_results: Results from evaluation process
             output_dir: Optional directory for reports
-            
+
         Returns:
             Dictionary mapping report types to file paths
         """
         if output_dir is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_dir = self.output_dir / f"complete_package_{timestamp}"
-        
+
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         report_paths = {}
-        
+
         # Generate all report types
         try:
             report_paths["executive"] = self._generate_executive_summary(
@@ -501,7 +501,7 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             report_paths["synthesis"] = self._generate_synthesis_recommendations(
                 evaluation_results, output_dir / "synthesis_recommendations.pdf"
             )
-            
+
             # Generate export files
             report_paths["csv"] = self.generate_csv_export(
                 evaluation_results, output_dir / "evaluation_data.csv"
@@ -509,8 +509,8 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             report_paths["json"] = self.generate_json_export(
                 evaluation_results, output_dir / "evaluation_data.json"
             )
-            
+
         except Exception as e:
             raise Exception(f"Failed to generate complete report package: {e}")
-        
+
         return report_paths
