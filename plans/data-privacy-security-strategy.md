@@ -1,52 +1,120 @@
-# Data Privacy & Security Strategy
-*LLM as a Judge - Accessibility Remediation Plan Evaluator*
+# Data Privacy & Security Strategy - Local Development
+*LLM as a Judge - Local Application Security Guidelines*
 
 **← [Master Plan](./master-plan.md)** | **Referenced in all phases**
 
 ## Overview
 
-This document outlines comprehensive data privacy and security requirements for the LLM as a Judge system. Given that accessibility audit reports and remediation plans may contain sensitive business information, technical details, and potentially user data, we implement a privacy-by-design approach with enterprise-grade security controls.
+This document outlines basic data privacy and security considerations for the local development version of the LLM as a Judge system. Since this application runs locally and doesn't store data persistently, security requirements are significantly simplified.
 
-## Data Classification & Handling
+**Note**: Enterprise security features removed as this application is designed for local use only.
 
-### Data Types and Sensitivity Levels
+## Local Development Security
 
-#### 1. Highly Sensitive Data
-- **Client Names and Business Information**: Organization names, contact details, business relationships
-- **Technical Infrastructure Details**: Server configurations, internal URLs, proprietary technology stacks
-- **User Journey Information**: Specific user flows, business process details
-- **Financial Information**: Budget allocations, cost estimates, revenue impact data
+### Data Handling for Local Use
 
-#### 2. Moderately Sensitive Data
-- **Accessibility Audit Findings**: Specific WCAG violations, technical implementation issues
-- **Remediation Strategies**: Technical approaches, implementation timelines
-- **Evaluation Scores and Analysis**: Judge assessments, comparative analysis results
+#### Local File Processing
+- **Temporary Processing**: Files processed in memory and temporary directories
+- **No Persistent Storage**: No data stored permanently on local machine
+- **Session-Based**: Data exists only during active evaluation sessions
+- **Automatic Cleanup**: Temporary files automatically cleaned up
 
-#### 3. Low Sensitivity Data
-- **Generic Best Practices**: General accessibility guidelines, standard WCAG references
-- **Framework Metadata**: Evaluation criteria, scoring methodologies
-- **System Performance Metrics**: Response times, processing statistics
+#### API Key Security
+- **Environment Variables**: API keys stored in local environment variables
+- **No Hardcoding**: No API keys embedded in source code
+- **Local .env Files**: Use .env files (git-ignored) for local development
+- **Secure Transmission**: All API calls use HTTPS
 
-### Data Handling Protocols
+### Simplified Data Classification
 
-#### Ephemeral Processing (Default Mode)
+#### Input Data (Temporary)
+- **PDF Files**: Accessibility audit reports and remediation plans
+- **Processing**: Files parsed and processed in memory
+- **Cleanup**: Content discarded after evaluation completion
+
+#### Generated Data (Temporary)
+- **Evaluation Results**: Judge assessments and scores
+- **Reports**: Generated PDF reports
+- **Export Data**: CSV/JSON exports for local download
+
+### Local Security Implementation
+
 ```python
-class EphemeralDataHandler:
+class LocalDataHandler:
     """
-    Processes data in memory only, no persistent storage
-    All data automatically purged after evaluation completion
+    Simple data handler for local application use
     """
     
     def __init__(self):
-        self.data_retention_policy = "EPHEMERAL_ONLY"
-        self.max_session_duration = timedelta(hours=2)
-        self.automatic_purge_enabled = True
+        self.temp_dir = tempfile.mkdtemp()
+        self.cleanup_on_exit = True
     
-    def process_evaluation(self, audit_data: bytes, plans_data: List[bytes]) -> EvaluationResult:
+    def process_evaluation(self, uploaded_files):
         """
-        Process evaluation with automatic data cleanup
+        Process uploaded files with automatic cleanup
         """
-        session_id = self._create_secure_session()
+        try:
+            # Process files in memory
+            results = self._evaluate_files(uploaded_files)
+            return results
+        finally:
+            # Automatic cleanup
+            self._cleanup_temp_files()
+```
+
+### Basic Security Measures
+
+#### Input Validation
+- **File Type Validation**: Only accept PDF files
+- **File Size Limits**: Reasonable file size restrictions
+- **Content Validation**: Basic PDF structure validation
+
+#### Error Handling
+- **No Sensitive Data in Logs**: Avoid logging file contents
+- **User-Friendly Errors**: Clear error messages without exposing internals
+- **Graceful Failures**: Handle API failures without crashes
+
+#### Local Environment
+- **Development Only**: Not intended for production deployment
+- **Single User**: Designed for individual local use
+- **No Network Exposure**: Runs on localhost only
+
+## Local Development Best Practices
+
+### Developer Guidelines
+1. **Never commit API keys** to version control
+2. **Use environment variables** for sensitive configuration
+3. **Test with sample data** to avoid exposing real sensitive information
+4. **Keep dependencies updated** for security patches
+
+### File Handling
+1. **Process files in memory** when possible
+2. **Clean up temporary files** automatically
+3. **Don't persist uploaded content** permanently
+4. **Use secure temporary directories**
+
+### API Integration
+1. **Use HTTPS for all API calls**
+2. **Implement appropriate timeouts**
+3. **Handle API failures gracefully**
+4. **Don't log API keys or responses**
+
+## Local Testing Security
+
+### Test Data Guidelines
+- **Use anonymized test data** when possible
+- **No real sensitive information** in test files
+- **Sample accessibility reports** with fictional company data
+- **Generic remediation plans** without proprietary information
+
+### Development Environment
+- **Local development only**: Not for shared environments
+- **Individual API keys**: Each developer uses own API keys
+- **No shared credentials**: No shared accounts or keys
+
+---
+
+**Security Note**: This simplified security model is appropriate for local development and testing. Any future deployment would require implementing comprehensive enterprise security measures.
         
         try:
             # Process data in secure memory space
