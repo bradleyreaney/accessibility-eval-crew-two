@@ -332,13 +332,13 @@ class EvaluationReportGenerator:
         content = f"""
 ACCESSIBILITY EVALUATION REPORT
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-{'='*50}
+{'=' * 50}
 
 EXECUTIVE SUMMARY
 Plans evaluated: {len(results.get('plans', {}))}
 
 SCORING RESULTS
-{'='*20}
+{'=' * 20}
 """
 
         plans = results.get("plans", {})
