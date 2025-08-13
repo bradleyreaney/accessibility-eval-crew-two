@@ -2,8 +2,8 @@
 
 *A local AI system for evaluating accessibility remediation plans using multi-agent LLM workflows*
 
-[![Tests](https://img.shields.io/badge/tests-169%20passed-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-82%25-green)]()
+[![Tests](https://img.shields.io/badge/tests-212%20passed-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)]()
 [![Phase](https://img.shields.io/badge/phase-4%20complete-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11+-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
@@ -97,8 +97,15 @@ accessibility-eval-crew-two/
 │       ├── scoring_agent.py    # Scoring & Ranking Agent
 │       ├── analysis_agent.py   # Strategic Analysis Agent
 │       └── tools/             # Agent-specific tools
-├── tests/                 # Comprehensive test suite
-│   ├── unit/              # Fast unit tests (82%+ coverage)
+├── tests/                 # Comprehensive test suite (91% coverage)
+│   ├── unit/              # Fast unit tests organized by module
+│   │   ├── agents/            # Agent and tool tests
+│   │   ├── config/            # Configuration tests
+│   │   ├── models/            # Data model tests
+│   │   ├── reports/           # Report generation tests
+│   │   ├── tasks/             # Task management tests
+│   │   ├── tools/             # Core tool tests
+│   │   └── utils/             # Utility tests
 │   ├── integration/       # Real file/API integration tests
 │   └── conftest.py        # Test fixtures and configuration
 ├── data/                  # Sample audit reports and plans
