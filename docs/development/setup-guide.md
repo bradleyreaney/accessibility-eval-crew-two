@@ -36,13 +36,18 @@ LANGCHAIN_API_KEY=your_langchain_api_key
 ## Verification
 ```bash
 # Test PDF parsing
-python -m pytest tests/unit/test_pdf_parser.py -v
+python -m pytest tests/unit/tools/test_pdf_parser.py -v
 
 # Test LLM connections (requires API keys)
-python -m pytest tests/unit/test_llm_config.py::TestLLMIntegration -v
+python -m pytest tests/unit/config/test_llm_config.py::TestLLMIntegration -v
 
 # Run all unit tests
 python -m pytest tests/unit/ -v --cov=src
+
+# Test specific modules
+python -m pytest tests/unit/agents/ -v       # Agent tests
+python -m pytest tests/unit/tools/ -v        # Tool tests
+python -m pytest tests/unit/config/ -v       # Configuration tests
 
 # Run integration tests (requires data files and API keys)
 python -m pytest tests/integration/ -v
@@ -65,16 +70,18 @@ flake8 src/ tests/
 mypy src/
 ```
 
-### Testing (Updated for Phase 2)
+### Testing (Updated for Organized Structure)
 ```bash
 # Run all tests with coverage
 python -m pytest tests/ -v --cov=src --cov-report=html
 
-# Run only unit tests (includes agent tests)
+# Run only unit tests (193 tests organized by module)
 python -m pytest tests/unit/ -v
 
-# Run agent-specific tests
-python -m pytest tests/unit/test_agents.py -v
+# Run tests by module
+python -m pytest tests/unit/agents/ -v      # Agent tests
+python -m pytest tests/unit/tools/ -v       # Tool tests
+python -m pytest tests/unit/config/ -v      # Configuration tests
 
 # Run only integration tests
 python -m pytest tests/integration/ -v

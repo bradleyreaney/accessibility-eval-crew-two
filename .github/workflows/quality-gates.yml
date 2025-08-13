@@ -68,7 +68,8 @@ jobs:
     - name: Unit Tests with Coverage
       timeout-minutes: 10  # Prevent test hangs
       run: |
-        python -m pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=90 --tb=short
+          run: |
+          python -m pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=90 --tb=short
       env:
         PYTHONPATH: ${{ github.workspace }}/src
 
