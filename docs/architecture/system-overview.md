@@ -92,9 +92,33 @@
   - Strength/weakness identification
   - Relative performance assessment
 
-## Current Architecture Status (Phase 2 Complete)
+### Phase 3: Workflow Orchestration (✅ Complete)
 
-### Data Flow (Updated)
+#### Task Management (`src/tasks/`)
+- **Evaluation Tasks**: Individual plan evaluation task coordination
+  - Single plan evaluation workflow
+  - Judge agent coordination and result collection
+  - Structured evaluation output formatting
+
+- **Comparison Tasks**: Multi-plan comparison workflows
+  - Comparative evaluation task management
+  - Cross-plan analysis and ranking coordination
+  - Synthesis of comparison results
+
+- **Synthesis Tasks**: Result aggregation and reporting
+  - Multi-agent result synthesis
+  - Consensus building across judge agents
+  - Final report compilation and formatting
+
+#### CrewAI Configuration (`src/config/`)
+- **Crew Configuration**: Multi-agent workflow orchestration
+  - Agent role definitions and tool assignments
+  - Task delegation and execution coordination
+  - Workflow validation and error handling
+
+## Current Architecture Status (Phase 3 Complete)
+
+### Complete Data Flow
 
 1. **Input Processing**
    ```
@@ -102,66 +126,75 @@
    Eval Prompt → Prompt Manager → Structured Criteria
    ```
 
-2. **Agent Processing (NEW)**
+2. **Workflow Orchestration (NEW)**
+   ```
+   DocumentContent → Task Manager → Coordinated Agent Execution
+   Agent Tasks → CrewAI → Multi-Agent Workflow Execution
+   Task Results → Synthesis → Unified Evaluation Output
+   ```
+
+3. **Agent Processing**
    ```
    DocumentContent + Criteria → Agent Tools → Formatted Evaluations
    Evaluation Prompts → Judge Agents → Structured Assessments
    Raw Scores → Scoring Agent → Weighted Rankings
    ```
 
-3. **LLM Integration**
+4. **LLM Integration**
    ```
    Agent Prompts → LLM Manager → Multi-LLM Responses
    Gemini Pro (Primary + Scoring) + GPT-4 (Secondary + Analysis)
    ```
 
-4. **Output Generation**
+5. **Output Generation**
    ```
-   Agent Evaluations → Report Generator → PDF Reports (Ready for Phase 3)
+   Workflow Results → Report Generator → Structured Reports
+   Evaluation Data → Export Layer → PDF Reports (Phase 4)
    ```
 
 ### Configuration Management
 
-- **Environment Variables**: API keys, paths, and settings
-- **LLM Configuration**: Model settings, timeouts, retry logic  
-- **Agent Configuration**: Role definitions, tool assignments
-- **Validation**: Input validation and error handling
+- **Environment Variables**: API keys and local settings
+- **LLM Configuration**: Model settings and retry logic  
+- **Agent Configuration**: Role definitions and tool assignments
+- **Workflow Configuration**: Task definitions and execution order
+- **Local Storage**: File-based data persistence
 
-### Testing Architecture (Updated)
+### Testing Architecture (Complete)
 
-- **Unit Tests**: Individual component + agent testing with mocks
-- **Agent Tests**: Specialized agent initialization and tool validation
+- **Unit Tests**: Individual component testing with comprehensive mocks
+- **Agent Tests**: Specialized agent and tool validation
+- **Workflow Tests**: CrewAI task and crew integration testing
 - **Integration Tests**: End-to-end testing with real APIs/files
-- **Demo Scripts**: Complete workflow demonstrations (`scripts/phase2_demo.py`)
-- **TDD Approach**: Test-driven development with Red-Green-Refactor
+- **Demo Scripts**: Complete workflow demonstrations
+- **TDD Approach**: Test-driven development maintaining 90%+ coverage
 
 ## Next Phase Architecture
 
-### Phase 3: Workflow Orchestration (Ready to Begin)
-- **CrewAI Crews**: Coordinated multi-agent workflows
-- **Task Orchestration**: Sequential and parallel agent execution
-- **Consensus Mechanisms**: Multi-judge agreement protocols
-- **Quality Assurance**: Evaluation validation and consistency
+### Phase 4: User Interface (In Progress)
+- **Streamlit Interface**: Local web UI for evaluation management
+- **File Upload**: PDF document upload and processing
+- **Progress Tracking**: Real-time workflow execution monitoring
+- **Report Viewing**: Interactive report display and export
 
-### Phase 4: Interface Layer
-- **Streamlit Interface**: Web UI for evaluation management
-- **FastAPI Backend**: REST API for programmatic access
-- **Report Management**: Generated report storage and retrieval
+## Local Application Focus
 
-## Security Considerations
+### Security Considerations
 
-- **API Key Management**: Secure storage and rotation
+- **API Key Management**: Secure local environment variable storage
 - **Input Validation**: PDF security scanning and content validation
-- **Data Privacy**: Sensitive content handling and anonymization
+- **Data Privacy**: All processing done locally, no external data transmission
 
-## Performance Considerations
+### Performance Considerations
 
-- **Async Processing**: Non-blocking LLM calls
-- **Caching**: Response caching for repeated evaluations
-- **Rate Limiting**: API quota management and backoff strategies
+- **Local Processing**: All evaluation done on local machine
+- **Efficient Workflows**: Optimized CrewAI task execution
+- **Memory Management**: Careful handling of large PDF documents
+- **Caching**: Local result caching for repeated evaluations
 
-## Scalability
+### Local Execution Benefits
 
-- **Horizontal Scaling**: Multiple agent instances
-- **Load Balancing**: Request distribution across LLM providers
-- **Queue Management**: Background task processing
+- **Data Privacy**: All sensitive documents processed locally
+- **Network Independence**: No external dependencies after API key setup
+- **Customization**: Easy modification of evaluation criteria and workflows
+- **Control**: Complete control over evaluation process and data handling

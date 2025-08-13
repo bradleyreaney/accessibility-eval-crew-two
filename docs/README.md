@@ -1,177 +1,145 @@
-# Developer Documentation
-*LLM as a Judge - Accessibility Remediation Plan Evaluator*
+# Documentation Hub
+*LLM as a Judge - Accessibility Evaluation System*
 
-## Overview
+Welcome to the comprehensive documentation for our local AI-powered accessibility evaluation system. This documentation covers everything from initial setup to advanced agent configuration.
 
-This directory contains comprehensive developer documentation for the LLM as a Judge project. The documentation is structured to support both human developers and AI coding assistants (like GitHub Copilot) throughout the development process.
+## 🎯 Quick Navigation
 
-## Directory Structure
+### � Getting Started
+- **[Setup Guide](development/setup-guide.md)** - Complete installation and configuration
+- **[Architecture Overview](architecture/system-overview.md)** - System design and components
+- **[Development Workflow](development/README.md)** - Development standards and practices
 
-### 📐 `architecture/`
-System design and architecture documentation
-- `system-overview.md` - High-level system design and component overview
-- `agent-architecture.md` - CrewAI agent design patterns and specifications
-- `data-flow.md` - Complete data processing pipeline documentation
-- `integration-patterns.md` - LLM and external service integration patterns
+### 🤖 Technical Documentation
+- **[API Reference](api-reference/)** - Complete component documentation
+- **[Agent System](../src/agents/)** - CrewAI agent implementations
+- **[Configuration](../src/config/)** - LLM and system configuration
+- **[Data Models](../src/models/)** - Pydantic validation models
 
-### 🛠️ `development/`
-Developer guides and setup instructions
-- `setup-guide.md` - Complete environment setup and configuration
-- `pre-commit-setup.md` - Pre-commit hooks configuration for code quality
-- `ci-cd-pipeline.md` - CI/CD pipeline overview and configuration
-- `ci-cd-github-actions.md` - Detailed GitHub Actions implementation
-- `phase-reports/` - Development phase completion reports
-- `quality-assurance/` - Code quality, testing, and validation documentation
-- `configurations/` - Alternative configuration files and setups
+### � Implementation Guides
+- **[Phase 1: Foundation](../plans/phase-1-foundation.md)** - Core infrastructure ✅
+- **[Phase 2: Core Agents](../plans/phase-2-agents.md)** - Agent development ✅  
+- **[Phase 3: Workflows](../plans/phase-3-workflow.md)** - CrewAI orchestration ✅
+- **[Phase 4: Interface](../plans/phase-4-interface.md)** - User interface (In Progress)
 
-### 📚 `api-reference/`
-Component and API documentation
-- `agents/` - Agent class documentation and specifications
-- `tools/` - Tool implementation guides and examples
-- `models/` - Data model specifications and validation rules
-- `workflows/` - Workflow and task definitions
+### � Development Resources
+- **[Development Standards](development/README.md)** - Code quality and testing
+- **[Project Structure](development/setup-guide.md#project-structure)** - Codebase organization
+- **[Configuration Guide](development/configurations/)** - Environment setup
 
-### 💡 `examples/`
-Code examples and templates
-- `agent-examples/` - Working agent implementation examples
-- `tool-examples/` - Custom tool development patterns
-- `test-examples/` - Testing pattern examples and fixtures
-- `integration-examples/` - Integration test patterns and workflows
+## 📊 Current Status
 
-### 🔧 `troubleshooting/`
-Problem-solving and debugging guides
-- `ci-cd/` - CI/CD pipeline issues and fixes
-- `testing/` - Testing-related troubleshooting and warnings analysis
-- `common-issues.md` - Frequently encountered problems and solutions
-- `llm-debugging.md` - LLM-specific troubleshooting and debugging
-- `performance-issues.md` - Performance optimization and profiling
-- `deployment-issues.md` - Production deployment troubleshooting
+### ✅ Completed Phases
+- **Phase 1**: Foundation with 90.28% test coverage
+- **Phase 2**: Four specialized CrewAI agents operational
+- **Phase 3**: Complete multi-agent workflow orchestration
 
-### 📖 `reference/`
-Quick reference materials
-- `evaluation-criteria.md` - Accessibility evaluation framework reference
-- `prompt-templates.md` - Standard prompts for agents and tools
-- `error-codes.md` - System error codes and their meanings
-- `glossary.md` - Technical terminology and definitions
+### 🔄 Active Development
+- **Phase 4**: Streamlit web interface development
 
-## Documentation Philosophy
+## 🏗️ Architecture Overview
 
-### For Human Developers
-- **Comprehensive**: Complete information for understanding and implementing features
-- **Practical**: Real-world examples and patterns that can be directly applied
-- **Navigable**: Clear structure with cross-references and quick access to information
-- **Current**: Documentation updated with code changes and maintained throughout development
+Our system uses a multi-layered architecture optimized for local execution:
 
-### For AI Assistants
-- **Contextual**: Rich context that helps AI understand project patterns and conventions
-- **Structured**: Consistent formatting and organization that AI can parse effectively
-- **Example-Rich**: Numerous working examples that demonstrate correct implementation patterns
-- **Pattern-Based**: Clear patterns that AI can recognize and replicate appropriately
+```
+┌─────────────────┐
+│ Streamlit UI    │ (Phase 4 - In Progress)
+├─────────────────┤
+│ CrewAI Workflow │ (Phase 3 - Complete)
+├─────────────────┤
+│ Agent Layer     │ (Phase 2 - Complete)  
+├─────────────────┤
+│ Foundation      │ (Phase 1 - Complete)
+└─────────────────┘
+```
 
-## Getting Started
+### Core Components
+- **Multi-Agent System**: 4 specialized agents with Gemini Pro & GPT-4
+- **PDF Processing**: Automated document parsing and content extraction
+- **Evaluation Framework**: Weighted scoring with WCAG alignment
+- **Local Interface**: Streamlit-based web application
 
-### For New Developers
-1. Start with `development/setup-guide.md` for environment configuration
-2. Review `architecture/system-overview.md` for project understanding
-3. Examine `examples/` directory for implementation patterns
-4. Use `reference/evaluation-criteria.md` for evaluation framework understanding
+## 🧪 Testing & Validation
 
-### For AI-Assisted Development
-1. Reference `development/copilot-prompts.md` for effective AI prompting
-2. Use `examples/` directory for pattern recognition and code generation
-3. Consult `api-reference/` for accurate API usage and specifications
-4. Follow `troubleshooting/` guides for error resolution and debugging
+### Quality Metrics
+- **143 tests passing** with 90.28% coverage
+- **Comprehensive validation** across all components
+- **Real data testing** with sample PDF documents
+- **Agent integration testing** with live LLM connections
 
-## Documentation Standards
+### Validation Scripts
+```bash
+# Phase 1 foundation validation
+python scripts/validate_phase1.py
 
-### Code Examples
-All code examples should be:
-- **Tested**: Working code that executes successfully
-- **Complete**: Include necessary imports and context
-- **Commented**: Clear explanations of complex logic
-- **Typed**: Include type hints for better AI understanding
+# Phase 2 agent demonstration  
+python scripts/phase2_demo.py
 
-### Cross-References
-- Use relative links to reference other documentation
-- Include "See Also" sections for related information
-- Reference specific implementation files when applicable
-- Link to external resources and official documentation
+# Quality gates validation
+python scripts/validate_quality_gates.py
+```
 
-### Update Frequency
-- **Daily**: Update examples when implementation patterns change
-- **Weekly**: Review and refresh troubleshooting guides
-- **Phase Completion**: Comprehensive review and documentation completion
-- **Production**: Final documentation validation and user guide creation
+## 📚 Key Documentation Files
 
-## Contributing to Documentation
+### Essential Reading
+1. **[System Overview](architecture/system-overview.md)** - Complete system design
+2. **[Development Guide](development/README.md)** - Development workflow
+3. **[Setup Guide](development/setup-guide.md)** - Installation instructions
+4. **[Master Plan](../plans/master-plan.md)** - Complete project roadmap
 
-### Adding New Documentation
-1. Follow the established directory structure
-2. Use consistent formatting and style
-3. Include practical examples and code snippets
-4. Test all code examples before committing
-5. Add cross-references to related documentation
+### Component Documentation
+- **[PDF Parser](api-reference/pdf-parser.md)** - Document processing
+- **[LLM Config](api-reference/llm-config.md)** - LLM integration
+- **[Evaluation Models](api-reference/evaluation-models.md)** - Data structures
+- **[Agent Tools](api-reference/agent-tools.md)** - Specialized agent tools
 
-### Updating Existing Documentation
-1. Maintain backward compatibility where possible
-2. Update related documentation when making changes
-3. Verify all links and references remain valid
-4. Test examples to ensure they still work
-5. Update timestamps and version information
+## 🔧 Development Workflow
 
-## AI Assistant Integration
+### Quick Start
+```bash
+# Clone and setup
+git clone <repository-url>
+cd accessibility-eval-crew-two
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
-### GitHub Copilot Optimization
-- **Consistent Patterns**: Use standardized naming and structure conventions
-- **Rich Context**: Provide comprehensive docstrings and comments
-- **Clear Examples**: Include working examples that demonstrate best practices
-- **Error Patterns**: Document common error scenarios and resolutions
+# Validate installation
+python scripts/validate_phase1.py
+```
 
-### Context Windows
-Documentation is structured to fit within AI context windows:
-- **Modular**: Each document focuses on specific topics
-- **Linked**: Cross-references provide access to related information
-- **Hierarchical**: Information organized from general to specific
-- **Searchable**: Clear headings and structure for easy navigation
+### Development Standards
+- **Test-Driven Development**: Write tests before implementation
+- **90%+ Test Coverage**: Maintain high quality standards
+- **Type Safety**: Comprehensive Pydantic models and type hints
+- **Documentation**: Every component thoroughly documented
 
-## Phase-Specific Documentation
+## 🚀 Future Development
 
-### Phase 1: Foundation (✅ Complete)
-- Complete setup and configuration guides
-- Basic architecture and system overview
-- Initial examples and patterns
-- Fundamental troubleshooting information
+### Phase 4: User Interface (In Progress)
+- Streamlit web application
+- File upload and processing
+- Real-time evaluation display
+- Report generation and export
 
-### Phase 2: Agent Development (✅ Complete)
-- Comprehensive agent development guides
-- Tool implementation patterns  
-- Testing strategies for agent behavior
-- LLM integration and debugging
-- Multi-agent coordination patterns
-- Agent tool development and integration
+### Local Application Focus
+This system is designed for local execution with:
+- No external dependencies for core functionality
+- Local data processing for privacy
+- Streamlit interface for ease of use
+- PDF-based input/output workflow
 
-### Phase 3: Workflow Integration (Ready to Begin)
-- Workflow orchestration documentation
-- Task definition and management
-- Integration testing patterns
-- Performance optimization guides
+## 📞 Support & Contributing
 
-### Phase 4: Interface Development
-- UI component documentation
-- API endpoint specifications
-- User experience guides
-- Export and reporting documentation
-
-### Phase 5: Production Deployment
-- Deployment guides and configurations
-- Monitoring and alerting setup
-- Performance benchmarking
-- Production troubleshooting
+- **Issues**: Use GitHub Issues for bug reports
+- **Development**: Follow [Copilot Instructions](../.github/copilot-instructions.md)
+- **Documentation**: Update docs with any changes
+- **Testing**: Maintain 90%+ test coverage
 
 ---
 
-**Last Updated**: February 2025  
-**Version**: 2.0.0 (Phase 2 Complete)  
-**Maintained By**: Development Team
+*This documentation is actively maintained and updated with each phase of development.*
 
-For questions or suggestions about this documentation, please refer to the project's main documentation in the `plans/` directory or contact the development team.
+**Last Updated**: February 2025  
+**Version**: 3.0.0 (Phase 3 Complete)  
+**Status**: Local Application Focus

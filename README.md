@@ -1,28 +1,30 @@
 # LLM as a Judge - Accessibility Evaluation System
 
-*An enterprise-grade AI system for evaluating accessibility remediation plans using multi-agent LLM workflows*
+*A local AI system for evaluating accessibility remediation plans using multi-agent LLM workflows*
 
-[![Tests](https://img.shields.io/badge/tests-68%20passed-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-32.20%25-red)]()
-[![Phase](https://img.shields.io/badge/phase-2%20complete-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-143%20passed-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-90.28%25-brightgreen)]()
+[![Phase](https://img.shields.io/badge/phase-3%20complete-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11+-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 ## 🎯 Overview
 
-This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments.
+This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments through a local Streamlit web application.
 
-**Status: Phase 2 COMPLETE** - Core agent evaluation system fully implemented and operational (August 2025).
+**Status: Phase 3 COMPLETE** - CrewAI workflow integration fully implemented and operational (August 2025).
 
 ### Key Features
 - 🤖 **Multi-Agent Evaluation**: 4 specialized CrewAI agents with Gemini Pro & GPT-4
 - 🎯 **Expert Judge Agents**: Primary (Gemini) and Secondary (GPT-4) evaluation agents
 - 📊 **Scoring & Analysis**: Dedicated agents for weighted scoring and strategic analysis
 - 📈 **Weighted Scoring**: Strategic Prioritization (40%), Technical Specificity (30%), Comprehensiveness (20%), Long-Term Vision (10%)
-- �️ **Agent Tools**: 4 specialized tools for evaluation, scoring, gap analysis, and comparison
-- �📄 **PDF Processing**: Automated parsing of audit reports and remediation plans  
-- 🔄 **Comparative Analysis**: Rank and compare multiple remediation strategies
-- � **Professional Reports**: Detailed evaluation reports with scores and recommendations
+- 🛠️ **Agent Tools**: 4 specialized tools for evaluation, scoring, gap analysis, and comparison
+- 🔄 **CrewAI Workflow**: Complete multi-agent task coordination and execution
+- 📄 **PDF Processing**: Automated parsing of audit reports and remediation plans  
+- � **Comparative Analysis**: Rank and compare multiple remediation strategies
+- 📋 **Professional Reports**: Detailed evaluation reports with scores and recommendations
+- 🌐 **Local Web Interface**: Streamlit-based user interface (Phase 4)
 - 🎯 **WCAG Aligned**: Evaluation framework based on accessibility best practices
 
 ## 🚀 Quick Start
@@ -157,9 +159,8 @@ print(f"Evaluation criteria: {criteria}")
 - **PDF Processing**: 78K+ characters extracted from real accessibility files
 - **LLM Integration**: Framework ready for Gemini Pro & GPT-4
 - **Data Models**: Comprehensive Pydantic validation models
-- **Test Coverage**: 90.34% with 39 passing tests
+- **Test Coverage**: 90.28% with 143 passing tests
 - **Documentation**: Complete developer guides and API references
-- **CI/CD Pipeline**: Automated quality gates with GitHub Actions
 
 ### ✅ Phase 2: Core Agents Complete
 - **4 Specialized Agents**: Primary Judge (Gemini), Secondary Judge (GPT-4), Scoring Agent (Gemini), Analysis Agent (GPT-4)
@@ -171,35 +172,39 @@ print(f"Evaluation criteria: {criteria}")
 - **Integration Testing**: Comprehensive validation with real data
 - **Demo Implementation**: Complete workflow demonstration script
 
-### 🔮 Future Phases
-- **Phase 3**: Advanced multi-agent workflows and crew orchestration
-- **Phase 4**: Web interface and API development  
-- **Phase 5**: Production optimization and advanced features
+### ✅ Phase 3: CrewAI Workflows Complete
+- **Task Management**: Evaluation, comparison, and synthesis task coordination
+- **Crew Orchestration**: Multi-agent workflow execution with CrewAI
+- **End-to-End Pipeline**: Complete PDF-to-report processing workflow
+- **Advanced Coordination**: Agent collaboration and result synthesis
+- **Workflow Testing**: Comprehensive integration testing and validation
 
-## 🛡️ Quality Gates & CI/CD
+### 🔄 Phase 4: User Interface (IN PROGRESS)
+- **Streamlit Application**: Local web interface development
+- **User Experience**: File upload, progress tracking, report viewing
+- **Interactive Features**: Real-time evaluation and comparison
+- **Report Export**: PDF and structured data output
 
-### **Automated Quality Pipeline**
-Our GitHub Actions workflow ensures enterprise-grade quality standards:
+## �️ Local Development Standards
 
-#### **On Every Push/PR:**
+### **Quality Pipeline**
+Our development workflow ensures high-quality code for local use:
+
+#### **Development Checks:**
 - ✅ **Code Quality**: Black formatting + Flake8 linting
 - ✅ **Type Safety**: mypy static type analysis  
-- ✅ **Security**: Bandit vulnerability scanning
 - ✅ **Test Coverage**: 90%+ requirement enforced
 - ✅ **Performance**: <5 second per-test monitoring
 - ✅ **Documentation**: Docstring completeness validation
 
-#### **Quality Standards Enforced:**
+#### **Quality Standards:**
 ```bash
-├── 90%+ Test Coverage (Currently: 90.34%)
-├── Zero Security Vulnerabilities
+├── 90%+ Test Coverage (Currently: 90.28%)
 ├── <10 Second Test Execution
 ├── 100% Docstring Coverage
 ├── Zero Linting Warnings
-└── Multi-Python Version Support (3.11, 3.12)
+└── Python 3.11+ Support
 ```
-
-**📖 Complete CI/CD Documentation**: [CI/CD Pipeline Guide](docs/development/ci-cd-pipeline.md)
 
 ## 🧪 Testing
 
@@ -216,9 +221,8 @@ python -m pytest tests/integration/ -v --llm
 ```
 
 ### Test Results
-- **39 tests passing**: 100% success rate
-- **1 test skipped**: Integration test (requires real API keys)
-- **90.34% coverage**: Exceeds quality standards
+- **143 tests passing**: 100% success rate
+- **90.28% coverage**: Exceeds quality standards
 - **0 warnings**: Clean test output
 
 ## 📚 Documentation
@@ -227,13 +231,14 @@ python -m pytest tests/integration/ -v --llm
 - **[Setup Guide](docs/development/setup-guide.md)**: Complete installation instructions
 - **[API Reference](docs/api-reference/)**: Component documentation
 - **[Architecture Overview](docs/architecture/system-overview.md)**: System design
-- **[Testing Guide](docs/development/testing-guide.md)**: Testing patterns and best practices
+- **[Development Guide](docs/development/README.md)**: Development workflow and standards
 
 ### Implementation Plans
 - **[Master Plan](plans/master-plan.md)**: Complete project roadmap
 - **[Phase 1](plans/phase-1-foundation.md)**: Foundation implementation ✅
 - **[Phase 2](plans/phase-2-agents.md)**: Agent development ✅
-- **[Progress Report](plans/implementation-progress.md)**: Current status
+- **[Phase 3](plans/phase-3-workflow.md)**: CrewAI workflows ✅
+- **[Phase 4](plans/phase-4-interface.md)**: User interface (In Progress)
 
 ## 🤝 Development
 
@@ -265,16 +270,34 @@ mypy src/                            # Type checking
 pytest --cov=src --cov-report=term-missing
 ```
 
-**🎯 Automated Quality Gates**: All checks run automatically on push/PR via GitHub Actions
-
 ## 🔐 Security
 
 - **API Keys**: Never commit API keys; use environment variables
 - **Input Validation**: All external inputs validated with Pydantic
 - **Error Handling**: Graceful failure handling without data leakage
-- **Dependencies**: Regular security scanning of dependencies
+- **Local Operation**: All processing done locally for data privacy
 
 ## 📈 Performance
+
+- **Fast Tests**: Unit tests complete in <10 seconds
+- **Efficient Processing**: Optimized PDF parsing and LLM integration
+- **Memory Management**: Careful handling of large document processing
+- **Local Execution**: No network dependencies for core functionality
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🙋‍♂️ Support
+
+For issues, questions, or contributions:
+- **Issues**: [GitHub Issues](https://github.com/bradleyreaney/accessibility-eval-crew-two/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/bradleyreaney/accessibility-eval-crew-two/discussions)
+- **Documentation**: [Comprehensive docs](docs/README.md)
+
+---
+
+*Built with ❤️ for accessibility professionals using CrewAI, Gemini Pro, and GPT-4*
 
 - **PDF Processing**: <10 seconds for large files (50MB+)
 - **Memory Usage**: Efficient processing staying under 2GB
