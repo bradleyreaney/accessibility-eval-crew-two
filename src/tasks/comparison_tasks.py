@@ -217,7 +217,7 @@ class ComparisonTaskManager:
     def _create_evaluation_summary(self, evaluations: List[PlanEvaluation]) -> str:
         """Create formatted summary of all evaluations for comparison task."""
         summary = ""
-        plans = {}
+        plans: dict[str, list[PlanEvaluation]] = {}
 
         # Group evaluations by plan
         for eval in evaluations:

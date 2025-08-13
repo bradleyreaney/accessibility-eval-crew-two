@@ -234,7 +234,7 @@ class SynthesisTaskManager:
         context = "### PLAN EVALUATION SUMMARY:\n"
 
         # Group evaluations by plan
-        plans = {}
+        plans: dict[str, list[PlanEvaluation]] = {}
         for evaluation in plan_evaluations:
             if evaluation.plan_name not in plans:
                 plans[evaluation.plan_name] = []
