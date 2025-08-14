@@ -284,7 +284,7 @@ class CacheManager:
     ) -> str:
         """Generate unique cache key for evaluation input"""
         combined_content = f"{audit_content}:{plan_content}:{evaluation_type}"
-        return hashlib.md5(combined_content.encode()).hexdigest()
+        return hashlib.sha256(combined_content.encode()).hexdigest()
 
     def get_cached_result(self, cache_key: str) -> Optional[Any]:
         """Retrieve cached evaluation result"""
