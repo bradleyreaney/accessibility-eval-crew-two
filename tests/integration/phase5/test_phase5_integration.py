@@ -73,7 +73,7 @@ class TestPhase5Integration:
         ]
 
         # Record initial metrics
-        initial_metrics = self.performance_monitor.record_metrics(
+        self.performance_monitor.record_metrics(
             {"active_agents": 2, "tokens_processed": 500}
         )
 
@@ -81,7 +81,7 @@ class TestPhase5Integration:
         conflicts = self.consensus_engine.analyze_conflicts(evaluations)
 
         # Record metrics after conflict analysis
-        analysis_metrics = self.performance_monitor.record_metrics(
+        self.performance_monitor.record_metrics(
             {"active_agents": 2, "tokens_processed": 750, "response_time_ms": 2500}
         )
 
@@ -89,7 +89,7 @@ class TestPhase5Integration:
         resolutions = self.consensus_engine.resolve_conflicts(conflicts)
 
         # Record final metrics
-        final_metrics = self.performance_monitor.record_metrics(
+        self.performance_monitor.record_metrics(
             {
                 "active_agents": 0,
                 "tokens_processed": 1000,
@@ -118,7 +118,7 @@ class TestPhase5Integration:
         audit_reports = [Path("audit1.pdf"), Path("audit2.pdf")]
         plan_directories = [Path("plans1/"), Path("plans2/")]
 
-        job_id = batch_processor.submit_batch_job(
+        batch_processor.submit_batch_job(
             name="Integration Test Batch",
             audit_reports=audit_reports,
             plan_directories=plan_directories,
@@ -223,7 +223,7 @@ class TestPhase5Integration:
         self.performance_monitor.start_monitoring_session("full_workflow_test")
 
         # 2. Record initial system state
-        initial_metrics = self.performance_monitor.record_metrics(
+        self.performance_monitor.record_metrics(
             {"active_agents": 0, "queue_length": 0, "tokens_processed": 0}
         )
 
@@ -264,7 +264,7 @@ class TestPhase5Integration:
         ]
 
         # 4. Record metrics during evaluation
-        evaluation_metrics = self.performance_monitor.record_metrics(
+        self.performance_monitor.record_metrics(
             {
                 "active_agents": 2,
                 "queue_length": 1,
@@ -281,7 +281,7 @@ class TestPhase5Integration:
         )
 
         # 6. Record metrics after consensus
-        consensus_metrics = self.performance_monitor.record_metrics(
+        self.performance_monitor.record_metrics(
             {
                 "active_agents": 1,
                 "queue_length": 0,
