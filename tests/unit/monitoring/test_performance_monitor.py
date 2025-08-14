@@ -332,7 +332,7 @@ class TestCacheManager:
         )
 
         assert isinstance(key1, str)
-        assert len(key1) == 32  # MD5 hash length
+        assert len(key1) == 64  # SHA256 hash length
         assert key1 == key2  # Same inputs should produce same key
         assert key1 != key3  # Different inputs should produce different keys
 
