@@ -5,7 +5,7 @@ Tests all tools in src/agents/tools/
 
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from src.agents.tools.evaluation_framework import EvaluationFrameworkTool
 from src.agents.tools.gap_analyzer import GapAnalyzerTool
@@ -35,6 +35,75 @@ class TestEvaluationFrameworkTool(unittest.TestCase):
         )
         self.assertIsInstance(result, str)
         self.assertIn("evaluation", result.lower())
+
+    @patch("src.agents.tools.evaluation_framework.PromptManager")
+    def test_load_framework_criteria_success(self, mock_prompt_manager):
+        """Test successful loading of framework criteria"""
+        # Setup mock to return valid criteria
+        mock_instance = Mock()
+        mock_instance.extract_evaluation_criteria.return_value = {
+            "Strategic": 0.4,
+            "Technical": 0.3,
+            "Comprehensive": 0.2,
+            "Vision": 0.1,
+        }
+        mock_prompt_manager.return_value = mock_instance
+
+        tool = EvaluationFrameworkTool()
+
+        # Check that criteria were loaded successfully
+        self.assertEqual(len(tool.criteria_weights), 4)
+        self.assertEqual(tool.criteria_weights["Strategic"], 0.4)
+
+    @patch("src.agents.tools.evaluation_framework.PromptManager")
+    def test_load_framework_criteria_fallback(self, mock_prompt_manager):
+        """Test fallback criteria when loading fails"""
+        # Setup mock to raise exception
+        mock_instance = Mock()
+        mock_instance.extract_evaluation_criteria.side_effect = Exception("Load failed")
+        mock_prompt_manager.return_value = mock_instance
+
+        tool = EvaluationFrameworkTool()
+
+        # Check that fallback criteria were used
+        self.assertEqual(len(tool.criteria_weights), 4)
+        self.assertIn("Strategic Prioritization", tool.criteria_weights)
+        self.assertEqual(tool.criteria_weights["Strategic Prioritization"], 0.4)
+
+    def test_apply_framework_exception_handling(self):
+        """Test exception handling in _run method"""
+        # Force an exception by providing invalid inputs
+        with patch.object(
+            self.tool, "_build_evaluation_prompt", side_effect=Exception("Build failed")
+        ):
+            result = self.tool._run(
+                plan_name="Test Plan",
+                plan_content="Test content",
+                audit_context="Test context",
+            )
+
+            self.assertIsInstance(result, str)
+            self.assertIn("Error", result)
+            self.assertIn("Test Plan", result)
+
+    def test_get_criteria_weights(self):
+        """Test get_criteria_weights method"""
+        weights = self.tool.get_criteria_weights()
+
+        self.assertIsInstance(weights, dict)
+        self.assertGreater(len(weights), 0)
+        # Verify that weights sum approximately to 1.0
+        total_weight = sum(weights.values())
+        self.assertAlmostEqual(total_weight, 1.0, places=1)
+
+    def test_criteria_weights_property(self):
+        """Test criteria_weights property access"""
+        weights = self.tool.criteria_weights
+
+        self.assertIsInstance(weights, dict)
+        self.assertGreater(len(weights), 0)
+        # Test that it's the same as get_criteria_weights
+        self.assertEqual(weights, self.tool.get_criteria_weights())
 
 
 class TestGapAnalyzerTool(unittest.TestCase):

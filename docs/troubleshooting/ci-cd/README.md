@@ -5,18 +5,18 @@ This directory contains troubleshooting guides and fix documentation for CI/CD p
 ## GitHub Actions Issues & Fixes
 
 ### Major CI/CD Improvements
-- **[GITHUB_ACTIONS_COMPLETE_FIX.md](./GITHUB_ACTIONS_COMPLETE_FIX.md)** - Complete GitHub Actions fixes
+- **[github-actions-complete-fix.md](./github-actions-complete-fix.md)** - Complete GitHub Actions fixes
   - Pipeline optimization solutions
   - Dependency resolution improvements
   - Timeout and performance fixes
 
-- **[GITHUB_ACTIONS_FIX.md](./GITHUB_ACTIONS_FIX.md)** - Core GitHub Actions troubleshooting
+- **[github-actions-fix.md](./github-actions-fix.md)** - Core GitHub Actions troubleshooting
   - Common CI/CD issues and solutions
   - Workflow configuration fixes
   - Build and test failures resolution
 
 ### Phase-Specific CI/CD Fixes
-- **[PHASE2_GITHUB_ACTIONS_FIXES.md](./PHASE2_GITHUB_ACTIONS_FIXES.md)** - Phase 2 specific CI/CD issues
+- **[phase2-github-actions-fixes.md](./phase2-github-actions-fixes.md)** - Phase 2 specific CI/CD issues
   - CrewAI dependency challenges
   - Multi-LLM integration testing
   - Agent-specific testing pipeline adjustments

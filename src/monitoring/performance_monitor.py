@@ -171,7 +171,11 @@ class PerformanceMonitor:
         self, metrics: List[PerformanceMetrics]
     ) -> Dict[str, float]:
         """Analyze response time patterns"""
-        response_times = [m.response_time_ms for m in metrics if m.response_time_ms > 0]
+        response_times = [
+            m.response_time_ms
+            for m in metrics
+            if m.response_time_ms is not None and m.response_time_ms > 0
+        ]
 
         if not response_times:
             return {"average_ms": 0, "peak_ms": 0, "min_ms": 0}
@@ -228,7 +232,11 @@ class PerformanceMonitor:
             recommendations.append("Consider CPU-bound task optimization with asyncio")
 
         # Response time optimization
-        response_times = [m.response_time_ms for m in metrics if m.response_time_ms > 0]
+        response_times = [
+            m.response_time_ms
+            for m in metrics
+            if m.response_time_ms is not None and m.response_time_ms > 0
+        ]
         if response_times and sum(response_times) / len(response_times) > 15000:
             recommendations.append(
                 "Implement request caching for similar evaluation inputs"
@@ -238,7 +246,11 @@ class PerformanceMonitor:
             )
 
         # Cache optimization
-        cache_rates = [m.cache_hit_rate for m in metrics if m.cache_hit_rate > 0]
+        cache_rates = [
+            m.cache_hit_rate
+            for m in metrics
+            if m.cache_hit_rate is not None and m.cache_hit_rate > 0
+        ]
         if cache_rates and sum(cache_rates) / len(cache_rates) < 0.5:
             recommendations.append(
                 "Expand cache size and implement smarter cache invalidation"

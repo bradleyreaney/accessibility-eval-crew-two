@@ -65,7 +65,11 @@ Thumbs.db
 # PyTest
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
+
+# MyPy
+.mypy_cache/
 
 # Streamlit
 .streamlit/
@@ -75,3 +79,14 @@ htmlcov/
 *.bak
 *.log
 test_report.txt
+test.txt
+
+# IDE and editor files
+*.swp
+*.swo
+*~
+.vscode/settings.json
+
+# Operating system files
+.DS_Store
+Thumbs.db

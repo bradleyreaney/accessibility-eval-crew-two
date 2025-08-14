@@ -792,6 +792,91 @@ class TestScoringAgent:
         assert "plan_scores" in result
         assert "rankings" in result
 
+    @patch("src.config.llm_config.LLMManager")
+    def test_compare_plans(self, mock_llm_manager):
+        """Test plan comparison functionality"""
+        mock_response = Mock()
+        mock_response.content = """
+        Comparative Analysis:
+        Plan A demonstrates superior strategic prioritization with clear accessibility roadmap.
+        Plan B shows stronger technical depth but lacks comprehensive timeline.
+        Recommendation: Plan A for organizations prioritizing strategic alignment.
+        """
+
+        mock_llm_manager.gemini = Mock()
+        mock_llm_manager.gemini.invoke.return_value = mock_response
+
+        agent = ScoringAgent(mock_llm_manager)
+
+        plan_a = {
+            "name": "Strategic Accessibility Plan",
+            "content": "Comprehensive accessibility strategy focusing on WCAG 2.1 compliance with phased implementation approach.",
+        }
+
+        plan_b = {
+            "name": "Technical Implementation Plan",
+            "content": "Detailed technical specifications for accessibility remediation with specific code examples.",
+        }
+
+        evaluation_data = [
+            {
+                "plan_name": "Strategic Accessibility Plan",
+                "success": True,
+                "evaluation_content": "Strategic: 8, Technical: 7, Comprehensive: 6, Vision: 7",
+            },
+            {
+                "plan_name": "Technical Implementation Plan",
+                "success": True,
+                "evaluation_content": "Strategic: 6, Technical: 9, Comprehensive: 7, Vision: 6",
+            },
+        ]
+
+        result = agent.compare_plans(plan_a, plan_b, evaluation_data)
+
+        assert result["success"] is True
+        assert result["plan_a"] == "Strategic Accessibility Plan"
+        assert result["plan_b"] == "Technical Implementation Plan"
+        assert "comparison_analysis" in result
+        assert "timestamp" in result
+        assert mock_llm_manager.gemini.invoke.called
+
+    @patch("src.config.llm_config.LLMManager")
+    def test_compare_plans_error_handling(self, mock_llm_manager):
+        """Test compare_plans method error handling"""
+        mock_llm_manager.gemini = Mock()
+        mock_llm_manager.gemini.invoke.side_effect = Exception("LLM comparison failed")
+
+        agent = ScoringAgent(mock_llm_manager)
+
+        plan_a = {"name": "Plan A", "content": "Test content A"}
+        plan_b = {"name": "Plan B", "content": "Test content B"}
+        evaluation_data = []
+
+        result = agent.compare_plans(plan_a, plan_b, evaluation_data)
+
+        assert result["success"] is False
+        assert "error" in result
+        assert "timestamp" in result
+
+    @patch("src.config.llm_config.LLMManager")
+    def test_get_agent_info(self, mock_llm_manager):
+        """Test get_agent_info method"""
+        mock_llm_manager.gemini = Mock()
+
+        agent = ScoringAgent(mock_llm_manager)
+
+        info = agent.get_agent_info()
+
+        assert isinstance(info, dict)
+        assert info["name"] == "Scoring Agent"
+        assert info["llm"] == "Gemini Pro"
+        assert "role" in info
+        assert "tools" in info
+        assert "capabilities" in info
+        assert isinstance(info["capabilities"], list)
+        assert len(info["capabilities"]) > 0
+        assert "Weighted score calculation" in info["capabilities"]
+
 
 class TestAnalysisAgent:
     """Test suite for analysis agent"""
