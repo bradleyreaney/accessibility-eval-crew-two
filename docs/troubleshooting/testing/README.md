@@ -5,7 +5,7 @@ This directory contains troubleshooting guides for testing-related issues and wa
 ## Test Warnings & Analysis
 
 ### Unit Test Warnings
-- **[UNIT_TEST_WARNINGS_ANALYSIS.md](./UNIT_TEST_WARNINGS_ANALYSIS.md)** - Comprehensive analysis of unit test warnings
+- **[unit-test-warnings-analysis.md](./unit-test-warnings-analysis.md)** - Comprehensive analysis of unit test warnings
   - 207 warnings breakdown and explanations
   - CrewAI framework deprecation warnings
   - Langchain/LangchainCore warnings

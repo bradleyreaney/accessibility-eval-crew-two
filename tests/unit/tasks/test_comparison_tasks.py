@@ -199,3 +199,175 @@ class TestComparisonTaskManager:
 
         for section in expected_sections:
             assert section in expected_output
+
+
+class TestComparisonTaskManagerAdditionalCoverage:
+    """Additional tests to improve comparison tasks coverage."""
+
+    @pytest.fixture
+    def mock_comparison_agent(self):
+        """Mock comparison agent."""
+        agent = Mock(spec=AnalysisAgent)
+        agent.agent = Mock(spec=Agent)
+        return agent
+
+    @pytest.fixture
+    def task_manager(self, mock_comparison_agent):
+        """Create ComparisonTaskManager instance for testing."""
+        return ComparisonTaskManager(mock_comparison_agent)
+
+    @pytest.fixture
+    def conflicting_evaluations(self):
+        """Sample conflicting evaluations for testing."""
+        return [
+            PlanEvaluation(
+                plan_name="Plan A",
+                judge_id="primary",
+                scores=[
+                    JudgmentScore(
+                        criterion="strategic",
+                        score=8.0,
+                        rationale="Good strategy",
+                        confidence=0.9,
+                    )
+                ],
+                overall_score=8.0,
+                detailed_analysis="Detailed analysis of Plan A from primary judge",
+                pros=["Strong strategy", "Good implementation"],
+                cons=["Some minor issues"],
+            ),
+            PlanEvaluation(
+                plan_name="Plan A",
+                judge_id="secondary",
+                scores=[
+                    JudgmentScore(
+                        criterion="strategic",
+                        score=6.0,
+                        rationale="Concerns about strategy",
+                        confidence=0.8,
+                    )
+                ],
+                overall_score=6.0,
+                detailed_analysis="Detailed analysis of Plan A from secondary judge",
+                pros=["Decent approach"],
+                cons=["Strategic concerns", "Implementation gaps"],
+            ),
+            PlanEvaluation(
+                plan_name="Plan B",
+                judge_id="primary",
+                scores=[
+                    JudgmentScore(
+                        criterion="technical",
+                        score=7.5,
+                        rationale="Good technical approach",
+                        confidence=0.9,
+                    )
+                ],
+                overall_score=7.5,
+                detailed_analysis="Detailed analysis of Plan B from primary judge",
+                pros=["Strong technical foundation"],
+                cons=["Could be more comprehensive"],
+            ),
+        ]
+
+    @patch("src.tasks.comparison_tasks.Task")
+    def test_create_consensus_building_task_structure(
+        self, mock_task_class, task_manager, conflicting_evaluations
+    ):
+        """Test that consensus building task is created with proper structure."""
+        mock_task_instance = Mock(spec=Task)
+        mock_task_class.return_value = mock_task_instance
+
+        result = task_manager.create_consensus_building_task(conflicting_evaluations)
+
+        # Verify Task was created
+        mock_task_class.assert_called_once()
+        assert result == mock_task_instance
+
+        # Check the task configuration
+        call_args = mock_task_class.call_args[1]
+
+        # Should have description
+        assert "description" in call_args
+        description = call_args["description"]
+        assert "Resolve significant disagreements" in description
+        assert "score differences exceed 1.0 points" in description
+
+        # Should have agent
+        assert "agent" in call_args
+        assert call_args["agent"] == task_manager.comparison_agent.agent
+
+        # Should have expected output
+        assert "expected_output" in call_args
+        expected_output = call_args["expected_output"]
+        assert "consensus resolution report" in expected_output.lower()
+
+    @patch("src.tasks.comparison_tasks.Task")
+    def test_create_consensus_building_task_includes_conflicts(
+        self, mock_task_class, task_manager, conflicting_evaluations
+    ):
+        """Test that consensus building task includes conflict details."""
+        mock_task_instance = Mock(spec=Task)
+        mock_task_class.return_value = mock_task_instance
+
+        task_manager.create_consensus_building_task(conflicting_evaluations)
+
+        call_args = mock_task_class.call_args[1]
+        description = call_args["description"]
+
+        # Should include plan names and conflicting scores
+        assert "Plan A" in description
+        assert "Plan B" in description
+        # The description should include the formatted conflicts
+
+    def test_format_conflicts_method(self, task_manager, conflicting_evaluations):
+        """Test the _format_conflicts helper method."""
+        result = task_manager._format_conflicts(conflicting_evaluations)
+
+        # Should be a string
+        assert isinstance(result, str)
+
+        # Should include all evaluation details
+        assert "Plan A" in result
+        assert "Plan B" in result
+        assert "primary" in result
+        assert "secondary" in result
+        assert "8.0" in result  # Plan A primary score
+        assert "6.0" in result  # Plan A secondary score
+        assert "7.5" in result  # Plan B primary score
+
+    def test_format_conflicts_empty_list(self, task_manager):
+        """Test _format_conflicts with empty evaluation list."""
+        result = task_manager._format_conflicts([])
+
+        # Should return empty string for empty list
+        assert isinstance(result, str)
+        assert result == ""
+
+    def test_format_conflicts_single_evaluation(self, task_manager):
+        """Test _format_conflicts with single evaluation."""
+        single_eval = [
+            PlanEvaluation(
+                plan_name="Single Plan",
+                judge_id="test_judge",
+                scores=[
+                    JudgmentScore(
+                        criterion="test",
+                        score=5.5,
+                        rationale="Test rationale",
+                        confidence=0.7,
+                    )
+                ],
+                overall_score=5.5,
+                detailed_analysis="Test analysis",
+                pros=["Test pro"],
+                cons=["Test con"],
+            )
+        ]
+
+        result = task_manager._format_conflicts(single_eval)
+
+        assert isinstance(result, str)
+        assert "Single Plan" in result
+        assert "test_judge" in result
+        assert "5.5" in result

@@ -346,6 +346,125 @@ class TestAccessibilityEvaluationCrew:
     @patch("src.config.crew_config.PrimaryJudgeAgent")
     @patch("src.config.crew_config.SecondaryJudgeAgent")
     @patch("src.config.crew_config.AnalysisAgent")
+    def test_validate_configuration_missing_agent_attribute(
+        self,
+        mock_analysis_agent,
+        mock_secondary_judge,
+        mock_primary_judge,
+        mock_llm_manager,
+    ):
+        """Test configuration validation with agent missing 'agent' attribute."""
+        # Setup agent without 'agent' attribute
+        mock_primary_instance = Mock()
+        mock_primary_judge.return_value = mock_primary_instance
+
+        mock_secondary_instance = Mock()
+        mock_secondary_instance.agent = Mock()
+        mock_secondary_judge.return_value = mock_secondary_instance
+
+        mock_analysis_instance = Mock()
+        mock_analysis_instance.agent = Mock()
+        mock_analysis_agent.return_value = mock_analysis_instance
+
+        crew = AccessibilityEvaluationCrew(mock_llm_manager)
+
+        # Remove the agent attribute to force the check to fail
+        delattr(crew.agents["primary_judge"], "agent")
+
+        # Validate configuration should fail due to missing agent attribute
+        assert crew.validate_configuration() is False
+
+    @patch("src.config.crew_config.PrimaryJudgeAgent")
+    @patch("src.config.crew_config.SecondaryJudgeAgent")
+    @patch("src.config.crew_config.AnalysisAgent")
+    def test_validate_configuration_missing_task_manager(
+        self,
+        mock_analysis_agent,
+        mock_secondary_judge,
+        mock_primary_judge,
+        mock_llm_manager,
+    ):
+        """Test configuration validation with missing task manager."""
+        # Setup proper agent mocks
+        mock_primary_instance = Mock()
+        mock_primary_instance.agent = Mock()
+        mock_primary_judge.return_value = mock_primary_instance
+
+        mock_secondary_instance = Mock()
+        mock_secondary_instance.agent = Mock()
+        mock_secondary_judge.return_value = mock_secondary_instance
+
+        mock_analysis_instance = Mock()
+        mock_analysis_instance.agent = Mock()
+        mock_analysis_agent.return_value = mock_analysis_instance
+
+        crew = AccessibilityEvaluationCrew(mock_llm_manager)
+
+        # Remove a task manager to simulate missing configuration
+        del crew.task_managers["evaluation"]
+
+        # Validate configuration should fail
+        assert crew.validate_configuration() is False
+
+    @patch("src.config.crew_config.PrimaryJudgeAgent")
+    @patch("src.config.crew_config.SecondaryJudgeAgent")
+    @patch("src.config.crew_config.AnalysisAgent")
+    def test_validate_configuration_missing_llm_config(
+        self,
+        mock_analysis_agent,
+        mock_secondary_judge,
+        mock_primary_judge,
+    ):
+        """Test configuration validation with missing LLM configuration."""
+        # Setup proper agent mocks
+        mock_primary_instance = Mock()
+        mock_primary_instance.agent = Mock()
+        mock_primary_judge.return_value = mock_primary_instance
+
+        mock_secondary_instance = Mock()
+        mock_secondary_instance.agent = Mock()
+        mock_secondary_judge.return_value = mock_secondary_instance
+
+        mock_analysis_instance = Mock()
+        mock_analysis_instance.agent = Mock()
+        mock_analysis_agent.return_value = mock_analysis_instance
+
+        # Create LLM manager missing required attributes
+        mock_llm_manager_incomplete = Mock(
+            spec=[]
+        )  # spec=[] ensures it has no attributes
+
+        crew = AccessibilityEvaluationCrew(mock_llm_manager_incomplete)
+
+        # Validate configuration should fail due to missing LLM configs
+        assert crew.validate_configuration() is False
+
+    @patch("src.config.crew_config.PrimaryJudgeAgent")
+    @patch("src.config.crew_config.SecondaryJudgeAgent")
+    @patch("src.config.crew_config.AnalysisAgent")
+    def test_validate_configuration_exception_handling(
+        self,
+        mock_analysis_agent,
+        mock_secondary_judge,
+        mock_primary_judge,
+        mock_llm_manager,
+    ):
+        """Test configuration validation exception handling."""
+        # Setup agent that will cause exception
+        mock_primary_judge.return_value = Mock()
+        mock_secondary_judge.return_value = Mock()
+        mock_analysis_agent.return_value = Mock()
+
+        crew = AccessibilityEvaluationCrew(mock_llm_manager)
+
+        # Force an exception by making hasattr fail
+        with patch("builtins.hasattr", side_effect=Exception("hasattr failed")):
+            # Validate configuration should fail gracefully
+            assert crew.validate_configuration() is False
+
+    @patch("src.config.crew_config.PrimaryJudgeAgent")
+    @patch("src.config.crew_config.SecondaryJudgeAgent")
+    @patch("src.config.crew_config.AnalysisAgent")
     def test_create_sample_evaluations(
         self,
         mock_analysis_agent,

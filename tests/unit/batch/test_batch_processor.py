@@ -271,6 +271,16 @@ class TestBatchProcessor:
         assert isinstance(std_dev, float)
         assert std_dev >= 0
 
+    def test_calculate_std_dev_edge_cases(self):
+        """Test standard deviation calculation with edge cases"""
+        # Test with empty list
+        std_dev = self.processor._calculate_std_dev([])
+        assert std_dev == 0.0
+
+        # Test with single value (should return 0.0 per line 269)
+        std_dev = self.processor._calculate_std_dev([7.5])
+        assert std_dev == 0.0
+
     def test_export_batch_results_json(self):
         """Test exporting batch results in JSON format"""
         # Create completed job with results
@@ -433,7 +443,7 @@ class TestHistoricalAnalysis:
 
     def test_percentile_calculation(self):
         """Test percentile calculation method"""
-        values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
 
         p50 = self.analysis._percentile(values, 50)
         p90 = self.analysis._percentile(values, 90)
@@ -480,6 +490,7 @@ class TestBatchProcessorIntegration:
 
         # Test status retrieval
         status = processor.get_batch_status(job_id)
+        assert status is not None
         assert status["status"] == "completed"
 
     def test_batch_processor_error_handling(self):
@@ -505,3 +516,320 @@ class TestBatchProcessorIntegration:
 
         # Verify executor was created with correct max workers
         assert processor.executor._max_workers == 2
+
+
+class TestBatchProcessorAdditionalCoverage:
+    """Additional tests to improve batch processor coverage"""
+
+    def test_export_batch_results_markdown(self):
+        """Test markdown export format"""
+        processor = BatchProcessor(Mock())
+
+        # Create a job with results including batch_summary
+        job = BatchJob(
+            job_id="test_job",
+            name="Test Job",
+            audit_reports=[Path("audit.pdf")],
+            plan_directories=[Path("plans/")],
+        )
+        job.results = {
+            "batch_summary": {
+                "total_evaluations": 5,
+                "average_scores": {
+                    "Plan A": {"mean": 8.5, "std_dev": 0.3},
+                    "Plan B": {"mean": 7.2, "std_dev": 0.8},
+                },
+            },
+            "individual_results": {},
+        }
+        processor.completed_jobs["test_job"] = job
+
+        result = processor.export_batch_results("test_job", "markdown")
+
+        assert "# Batch Evaluation Results" in result
+        assert "Total Evaluations: 5" in result
+        assert "Plan A**: 8.50" in result
+        assert "Plan B**: 7.20" in result
+
+    def test_export_batch_results_csv_with_plan_scores(self):
+        """Test CSV export with plan scores"""
+        processor = BatchProcessor(Mock())
+
+        # Create mock audit result with plan_scores attribute
+        mock_audit_result = Mock()
+        mock_audit_result.plan_scores = {"Plan A": 8.5, "Plan B": 7.2}
+
+        job = BatchJob(
+            job_id="test_job",
+            name="Test Job",
+            audit_reports=[Path("audit.pdf")],
+            plan_directories=[Path("plans/")],
+        )
+        job.results = {"individual_results": {"audit1": mock_audit_result}}
+        processor.completed_jobs["test_job"] = job
+
+        result = processor.export_batch_results("test_job", "csv")
+
+        assert "Plan,Score,Audit" in result
+        assert "Plan A,8.5,audit1" in result
+        assert "Plan B,7.2,audit1" in result
+
+    def test_generate_batch_recommendations(self):
+        """Test batch recommendation generation"""
+        processor = BatchProcessor(Mock())
+
+        batch_results = {"test": "data"}
+        summary = {
+            "total_evaluations": 5,
+            "average_scores": {"Plan A": {"mean": 8.5}, "Plan B": {"mean": 6.0}},
+            "consistency_metrics": {
+                "Plan A_consistency": 0.9,
+                "Plan B_consistency": 0.5,
+            },
+        }
+
+        recommendations = processor._generate_batch_recommendations(
+            batch_results, summary
+        )
+
+        assert isinstance(recommendations, list)
+        assert len(recommendations) > 0
+
+    def test_calculate_consistency_metrics_single_score(self):
+        """Test consistency calculation with single scores"""
+        processor = BatchProcessor(Mock())
+
+        all_plan_scores = {
+            "Plan A": [8.5],  # Single score
+            "Plan B": [7.0, 7.5, 6.5],  # Multiple scores
+        }
+
+        metrics = processor._calculate_consistency_metrics(all_plan_scores)
+
+        assert "Plan A_consistency" in metrics
+        assert "Plan B_consistency" in metrics
+        assert (
+            metrics["Plan A_consistency"] == 1.0
+        )  # Single score = perfect consistency
+
+    def test_calculate_consistency_metrics_multiple_scores(self):
+        """Test consistency calculation with multiple scores"""
+        processor = BatchProcessor(Mock())
+
+        all_plan_scores = {
+            "Plan A": [8.0, 8.0, 8.0],  # Very consistent
+            "Plan B": [5.0, 9.0, 6.0],  # Less consistent
+        }
+
+        metrics = processor._calculate_consistency_metrics(all_plan_scores)
+
+        assert metrics["Plan A_consistency"] > metrics["Plan B_consistency"]
+
+
+class TestHistoricalAnalysisAdditionalCoverage:
+    """Additional tests for HistoricalAnalysis coverage"""
+
+    def test_analyze_trends_time_period_edge_cases(self):
+        """Test time period filtering edge cases"""
+        analyzer = HistoricalAnalysis()
+
+        # Add some old data by directly adding to the database
+        # (since add_batch_results always uses current timestamp)
+        old_timestamp = datetime.now() - timedelta(days=400)
+        analyzer.evaluation_database.append(
+            {
+                "timestamp": old_timestamp,
+                "results": {
+                    "batch_summary": {"average_scores": {"Plan A": {"mean": 6.0}}}
+                },
+            }
+        )
+
+        # Test last_week filtering
+        week_data = analyzer._filter_by_time_period("last_week")
+        assert len(week_data) == 0  # No recent data
+
+        # Test last_month filtering
+        month_data = analyzer._filter_by_time_period("last_month")
+        assert len(month_data) == 0  # No recent data
+
+        # Test default case (last year)
+        year_data = analyzer._filter_by_time_period("unknown_period")
+        assert len(year_data) == 0  # Data too old
+
+    def test_analyze_plan_trends_with_data(self):
+        """Test plan trend analysis with actual data"""
+        analyzer = HistoricalAnalysis()
+
+        # Add multiple batch results
+        for i in range(3):
+            analyzer.add_batch_results(
+                {
+                    "timestamp": datetime.now() - timedelta(days=i),
+                    "batch_summary": {
+                        "average_scores": {
+                            "Plan A": {"mean": 8.0 + i * 0.1},
+                            "Plan B": {"mean": 7.0 - i * 0.1},
+                        }
+                    },
+                }
+            )
+
+        data = analyzer.evaluation_database
+        trends = analyzer._analyze_plan_trends(data)
+
+        assert isinstance(trends, dict)
+
+    def test_percentile_calculation_edge_cases(self):
+        """Test percentile calculation with edge cases"""
+        analyzer = HistoricalAnalysis()
+
+        # Test empty list
+        result = analyzer._percentile([], 50)
+        assert result == 0.0
+
+        # Test single value
+        result = analyzer._percentile([5.0], 50)
+        assert result == 5.0
+
+        # Test exact percentile index
+        result = analyzer._percentile([1.0, 2.0, 3.0, 4.0, 5.0], 50)
+        assert result == 3.0
+
+        # Test interpolated percentile
+        result = analyzer._percentile([1.0, 2.0, 3.0, 4.0], 25)
+        assert result == 1.75
+
+        # Test upper bound edge case
+        result = analyzer._percentile([1.0, 2.0], 100)
+        assert result == 2.0
+
+    def test_generate_benchmark_scores_edge_cases(self):
+        """Test benchmark score generation edge cases"""
+        analyzer = HistoricalAnalysis()
+
+        # Test with no data
+        benchmarks = analyzer.generate_benchmark_scores()
+        assert benchmarks == {}
+
+        # Add data with individual results containing plan_scores
+        mock_audit_result = Mock()
+        mock_audit_result.plan_scores = {"Plan A": 8.0, "Plan B": 7.5}
+
+        analyzer.evaluation_database.append(
+            {
+                "timestamp": datetime.now(),
+                "results": {"individual_results": {"audit1": mock_audit_result}},
+            }
+        )
+
+        benchmarks = analyzer.generate_benchmark_scores()
+        assert "excellent_threshold" in benchmarks
+        assert "good_threshold" in benchmarks
+        assert "average_threshold" in benchmarks
+
+
+class TestAdditionalEdgeCases:
+    """Additional tests to cover remaining edge cases"""
+
+    def test_std_dev_with_multiple_scores(self):
+        """Test standard deviation calculation with multiple scores"""
+        processor = BatchProcessor(Mock())
+
+        # Test with multiple scores (should call statistics.stdev)
+        scores = [7.0, 8.0, 9.0, 6.0, 8.5]
+        result = processor._calculate_std_dev(scores)
+
+        assert result > 0  # Should have non-zero standard deviation
+        assert isinstance(result, float)
+
+    def test_percentile_upper_bound_edge_case(self):
+        """Test percentile calculation with upper bound edge case"""
+        analyzer = HistoricalAnalysis()
+
+        # Test case where upper_index >= len(sorted_values)
+        values = [1.0, 2.0]  # Small list
+        result = analyzer._percentile(values, 95)  # High percentile
+
+        # Should handle the upper bound case
+        assert result >= 1.0
+        assert result <= 2.0
+
+    def test_percentile_exact_upper_bound_condition(self):
+        """Test percentile calculation where upper_index exactly equals len(sorted_values)"""
+        analyzer = HistoricalAnalysis()
+
+        # Create condition where upper_index >= len(sorted_values) (line 444)
+        values = [1.0]  # Single value
+        result = analyzer._percentile(values, 100)  # 100th percentile
+
+        # Should return the only value (line 444: return sorted_values[lower_index])
+        assert result == 1.0
+
+    def test_percentile_non_integer_index_upper_bound(self):
+        """Test percentile with non-integer index that hits upper bound condition"""
+        analyzer = HistoricalAnalysis()
+
+        # Test with values that might trigger the edge case
+        values = [1.0, 2.0]  # Two values
+        result = analyzer._percentile(values, 99)  # High integer percentile
+
+        assert isinstance(result, float)
+        assert 1.0 <= result <= 2.0
+
+    def test_export_csv_with_no_plan_scores(self):
+        """Test CSV export when audit result has no plan_scores attribute"""
+        processor = BatchProcessor(Mock())
+
+        # Create mock audit result without plan_scores attribute
+        mock_audit_result = Mock()
+        del mock_audit_result.plan_scores  # Remove the attribute
+
+        job = BatchJob(
+            job_id="test_job",
+            name="Test Job",
+            audit_reports=[Path("audit.pdf")],
+            plan_directories=[Path("plans/")],
+        )
+        job.results = {"individual_results": {"audit1": mock_audit_result}}
+        processor.completed_jobs["test_job"] = job
+
+        result = processor.export_batch_results("test_job", "csv")
+
+        # Should handle gracefully - just return headers
+        assert "Plan,Score,Audit" in result
+
+    def test_calculate_std_dev_multiple_values_path(self):
+        """Test standard deviation with multiple values to hit statistics.stdev path"""
+        processor = BatchProcessor(Mock())
+
+        # Test with exactly 2 values to ensure len(scores) > 1
+        scores = [5.0, 7.0]
+        result = processor._calculate_std_dev(scores)
+
+        # Should call statistics.stdev and return non-zero value
+        assert result > 0
+        import statistics
+
+        expected = statistics.stdev(scores)
+        assert abs(result - expected) < 0.0001
+
+    @pytest.mark.asyncio
+    async def test_process_audit_plan_combination_async(self):
+        """Test the async audit/plan combination processing"""
+        processor = BatchProcessor(Mock())
+
+        result = await processor._process_audit_plan_combination(
+            audit_path=Path("test_audit.pdf"),
+            plan_dir=Path("test_plans/"),
+            session_id="test_session_123",
+        )
+
+        # Check the mock result structure
+        assert "plan_scores" in result
+        assert "session_id" in result
+        assert "audit_path" in result
+        assert "plan_directory" in result
+        assert result["session_id"] == "test_session_123"
+        assert "test_audit.pdf" in result["audit_path"]
+        assert "test_plans" in result["plan_directory"]

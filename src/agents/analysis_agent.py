@@ -366,8 +366,17 @@ class AnalysisAgent:
         rankings = scoring_results.get("rankings", [])
         summary_lines = ["PLAN RANKINGS:"]
 
-        for i, (plan_name, score) in enumerate(rankings[:5], 1):
-            summary_lines.append(f"{i}. {plan_name}: {score:.2f}/10")
+        try:
+            # Handle case where rankings might be a dict instead of list
+            if isinstance(rankings, dict):
+                # Convert dict to sorted list of tuples
+                rankings = sorted(rankings.items(), key=lambda x: x[1], reverse=True)
+
+            for i, (plan_name, score) in enumerate(rankings[:5], 1):
+                summary_lines.append(f"{i}. {plan_name}: {score:.2f}/10")
+        except (TypeError, ValueError) as e:
+            logger.warning(f"Error formatting scoring summary: {e}")
+            summary_lines.append("Rankings unavailable due to format error")
 
         return "\n".join(summary_lines)
 
