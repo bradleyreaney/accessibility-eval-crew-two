@@ -74,3 +74,4 @@ htmlcov/
 *.tmp
 *.bak
 *.log
+test_report.txt
