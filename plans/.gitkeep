@@ -1,0 +1,15 @@
+# Plans Directory
+
+This directory was used during the development phases of the LLM as a Judge project.
+
+**Status**: All planning documents have been completed and removed after successful implementation.
+
+**Project Information Now Located In:**
+- `docs/PROJECT_SUMMARY.md` - Comprehensive project overview and achievements
+- `docs/development/phase-reports/` - Detailed completion reports for all phases
+- `docs/development/project-completion-audit.md` - Final project validation
+- `README.md` - Main project information
+
+**Current Project Status**: ✅ All 5 phases complete - Enterprise-ready system
+
+This `.gitkeep` file maintains the directory structure for potential future planning activities.

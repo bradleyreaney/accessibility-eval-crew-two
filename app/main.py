@@ -3,6 +3,66 @@ Main Streamlit application for LLM as a Judge system
 Phase 4 Implementation - Core UI functionality
 """
 
+import os
+
+# EARLY warning suppression: import first
+import sys
+
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
+
+from src.utils import suppress_warnings
+
+# Add the project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+import os
+
+# Apply warning suppression BEFORE any other imports
+import warnings
+
+# Set up comprehensive warning suppression
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pkg_resources.*")
+warnings.filterwarnings(
+    "ignore", message=".*pkg_resources.declare_namespace.*", category=DeprecationWarning
+)
+warnings.filterwarnings(
+    "ignore", message=".*declare_namespace.*google.*", category=DeprecationWarning
+)
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic.*")
+warnings.filterwarnings(
+    "ignore", message=".*class-based.*config.*deprecated.*", category=DeprecationWarning
+)
+warnings.filterwarnings(
+    "ignore", message=".*@validator.*deprecated.*", category=DeprecationWarning
+)
+warnings.filterwarnings(
+    "ignore", message=".*__fields__.*deprecated.*", category=DeprecationWarning
+)
+warnings.filterwarnings(
+    "ignore", message=".*schema.*method.*deprecated.*", category=DeprecationWarning
+)
+warnings.filterwarnings("ignore", category=UserWarning, module="crewai.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="crewai_tools.*")
+
+# Set environment variable for interpreter-level suppression
+os.environ["PYTHONWARNINGS"] = (
+    "ignore::DeprecationWarning:pkg_resources,"
+    "ignore::DeprecationWarning:pydantic,"
+    "ignore::UserWarning:crewai,"
+    "ignore::DeprecationWarning:crewai_tools"
+)
+
 import json
 import sys
 from datetime import datetime
@@ -58,7 +118,12 @@ class AccessibilityEvaluatorApp:
         if "evaluation_results" not in st.session_state:
             st.session_state.evaluation_results = None
         if "workflow_status" not in st.session_state:
-            st.session_state.workflow_status = None
+            st.session_state.workflow_status = {
+                "progress": 0,
+                "phase": "idle",
+                "status": "idle",
+                "details": "System ready for evaluation",
+            }
 
     def run(self):
         """Main application entry point"""
@@ -335,7 +400,7 @@ class AccessibilityEvaluatorApp:
                 self._refresh_status()
 
         # Progress monitoring
-        if hasattr(st.session_state, "workflow_status"):
+        if st.session_state.get("workflow_status"):
             self._render_progress_monitor()
 
     def _render_progress_monitor(self):
