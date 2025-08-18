@@ -1,23 +1,25 @@
 # Report Generator API Reference
 
-*Professional PDF and data export functionality for evaluation results*
+*Professional PDF and data export functionality for evaluation results with LLM resilience support*
 
 ## 📄 EvaluationReportGenerator
     # CLI integration for command-line interface
 
-Enhanced report generator providing professional PDF reports, CSV/JSON exports, and complete report packages.
+Enhanced report generator providing professional PDF reports, CSV/JSON exports, and complete report packages with comprehensive LLM resilience support including NA handling, availability status reporting, and completion statistics.
 
 ### Class Definition
 ```python
 class EvaluationReportGenerator:
     """
-    Generator for comprehensive evaluation reports.
+    Generator for comprehensive evaluation reports with LLM resilience support.
     
     Creates formatted reports from evaluation results including:
-    - Executive summary
-    - Detailed plan analysis
-    - Score comparisons
+    - Executive summary with partial evaluation support
+    - Detailed plan analysis with NA sections
+    - Score comparisons with availability status
     - Synthesis recommendations
+    - LLM availability status reporting
+    - Completion statistics and resilience information
     """
 ```
 
@@ -31,6 +33,8 @@ def __init__(self):
 - Output directory: `output/reports/`
 - ReportLab styles: Sample stylesheet initialization
 - Template system: Professional PDF formatting
+- NA handling: Standardized NA section generation
+- Availability status: LLM health monitoring integration
 
 ## 📊 Core Report Generation
 
@@ -43,51 +47,52 @@ def generate_pdf_report(
     output_path: Optional[Path] = None,
     report_type: str = "comprehensive"
 ) -> Path:
-    """Generate a comprehensive PDF evaluation report"""
+    """Generate a comprehensive PDF evaluation report with NA handling"""
 ```
 
 **Parameters:**
-- `evaluation_results`: Complete evaluation data structure
+- `evaluation_results`: Complete evaluation data structure with resilience information
 - `evaluation_input`: Original input data for context
 - `output_path`: Custom output location (optional)
 - `report_type`: Report template type
 
 **Report Types:**
-- `"comprehensive"`: Complete analysis with all sections
-- `"executive"`: High-level summary for stakeholders
-- `"detailed"`: In-depth technical analysis
-- `"comparative"`: Side-by-side plan comparison
-- `"synthesis"`: Strategic recommendations focus
+- `"comprehensive"`: Complete analysis with all sections including NA handling
+- `"executive"`: High-level summary for stakeholders with partial evaluation support
+- `"detailed"`: In-depth technical analysis with availability status
+- `"comparative"`: Side-by-side plan comparison with completion statistics
+- `"synthesis"`: Strategic recommendations focus with resilience information
 
-### CSV Export
+### CSV Export with NA Support
 ```python
 def generate_csv_export(
     self,
     evaluation_results: Dict[str, Any],
     output_path: Optional[Path] = None
 ) -> Path:
-    """Generate CSV export of evaluation scores and rankings"""
+    """Generate CSV export of evaluation scores and rankings with NA status"""
 ```
 
 **Output Columns:**
 - Plan Name
-- Primary Score
-- Secondary Score
-- Final Score
+- Status (Completed/Not Available)
+- Overall Score
 - Strategic Prioritization
 - Technical Specificity
 - Comprehensiveness
 - Long-Term Vision
+- NA_Reason (for unavailable evaluations)
+- LLM_Used (which LLM performed the evaluation)
 - Overall Ranking
 
-### JSON Export
+### JSON Export with Resilience Information
 ```python
 def generate_json_export(
     self,
     evaluation_results: Dict[str, Any],
     output_path: Optional[Path] = None
 ) -> Path:
-    """Generate JSON export of complete evaluation results"""
+    """Generate JSON export of complete evaluation results with resilience data"""
 ```
 
 **Output Structure:**
@@ -99,109 +104,82 @@ def generate_json_export(
         "version": "1.0",
         "plans_count": 7
     },
-    "evaluation_results": {
-        // Complete evaluation data
+    "completion_statistics": {
+        "total_plans": 7,
+        "completed_evaluations": 5,
+        "na_evaluations": 2,
+        "failed_evaluations": 0,
+        "available_llms": ["Gemini Pro"],
+        "unavailable_llms": ["GPT-4"],
+        "completion_percentage": 71.4
+    },
+    "resilience_info": {
+        "partial_evaluation": true,
+        "available_llms": ["Gemini Pro"],
+        "unavailable_llms": ["GPT-4"],
+        "na_evaluations_count": 2,
+        "completion_percentage": 71.4,
+        "resilience_timestamp": "2025-01-15T10:30:00Z"
+    },
+    "plans": {
+        "plan_name": {
+            "status": "completed",
+            "scores": {
+                "primary_score": 8.5,
+                "secondary_score": null,
+                "final_score": 8.5
+            },
+            "criteria_scores": {
+                "strategic_prioritization": 8.0,
+                "technical_specificity": 9.0,
+                "comprehensiveness": 8.5,
+                "long_term_vision": 8.0
+            },
+            "analysis": "Detailed analysis...",
+            "recommendations": ["Recommendation 1", "Recommendation 2"],
+            "llm_used": "Gemini Pro",
+            "na_reason": null
+        }
     }
 }
 ```
 
-## 🎯 Specialized Report Types
-
-### Executive Summary
+### Completion Summary Report
 ```python
-def _generate_executive_summary(
+def generate_completion_summary_report(
     self,
     evaluation_results: Dict[str, Any],
     output_path: Optional[Path] = None
 ) -> Path:
-    """Generate executive summary report"""
+    """Generate dedicated completion summary report with statistics"""
 ```
 
 **Features:**
-- High-level findings and recommendations
-- Key metrics and rankings
-- Strategic overview for decision makers
-- Concise 2-3 page format
+- Completion percentage and statistics
+- LLM availability status
+- NA evaluation details
+- Troubleshooting guidance
+- Performance metrics
 
-### Detailed Analysis
+### CLI Report Package
 ```python
-def _generate_detailed_analysis(
-    self,
-    evaluation_results: Dict[str, Any],
-    output_path: Optional[Path] = None
-) -> Path:
-    """Generate detailed analysis report"""
-```
-
-**Features:**
-- Comprehensive scoring breakdown
-- Detailed criteria analysis
-- Individual plan evaluations
-- Technical implementation guidance
-
-### Comparison Analysis
-```python
-def _generate_comparison_analysis(
-    self,
-    evaluation_results: Dict[str, Any],
-    output_path: Optional[Path] = None
-) -> Path:
-    """Generate comparison analysis report"""
-```
-
-**Features:**
-- Side-by-side plan comparison
-- Ranking justification
-- Strengths and weaknesses analysis
-- Selection criteria guidance
-
-### Synthesis Recommendations
-```python
-def _generate_synthesis_recommendations(
-    self,
-    evaluation_results: Dict[str, Any],
-    output_path: Optional[Path] = None
-) -> Path:
-    """Generate synthesis recommendations report"""
-```
-
-**Features:**
-- Strategic recommendations
-- Implementation roadmap
-- Risk assessment
-- Next steps guidance
-
-## 📦 Batch Report Generation
-
-### Complete Report Package
-```python
-def generate_complete_report_package(
+def generate_cli_report_package(
     self,
     evaluation_results: Dict[str, Any],
     output_dir: Optional[Path] = None
 ) -> Dict[str, Path]:
-    """Generate complete report package with all report types"""
+    """Generate complete CLI report package with all report types"""
 ```
 
 **Package Contents:**
-- Executive Summary PDF
-- Detailed Analysis PDF
-- Comparison Analysis PDF
-- Synthesis Recommendations PDF
-- Complete Data CSV
-- Complete Data JSON
-
-**Return Value:**
-```python
-{
-    "executive": Path("executive_summary.pdf"),
-    "detailed": Path("detailed_analysis.pdf"),
-    "comparative": Path("comparison_analysis.pdf"),
-    "synthesis": Path("synthesis_recommendations.pdf"),
-    "csv": Path("evaluation_data.csv"),
-    "json": Path("evaluation_data.json")
-}
-```
+- Comprehensive PDF report
+- Executive summary
+- Detailed analysis
+- Comparative analysis
+- Synthesis recommendations
+- Completion summary report
+- CSV export
+- JSON export
 
 ## 🎨 PDF Report Components
 
@@ -214,13 +192,13 @@ def _create_title_page(self, results: Dict[str, Any], report_type: str) -> List:
 **Elements:**
 - Report title and type
 - Generation timestamp
-- Evaluation summary
+- Evaluation summary with completion statistics
 - Professional styling
 
 ### Executive Summary Section
 ```python
 def _create_executive_summary(self, results: Dict[str, Any]) -> List:
-    """Create executive summary with key findings"""
+    """Create executive summary with key findings and partial evaluation support"""
 ```
 
 **Content:**
@@ -228,23 +206,39 @@ def _create_executive_summary(self, results: Dict[str, Any]) -> List:
 - Top-ranked plans
 - Key recommendations
 - Decision support information
+- Partial evaluation notes (if applicable)
+- Completion percentage
+
+### Availability Status Section
+```python
+def _create_availability_status_section(self, availability: Dict[str, bool]) -> List:
+    """Create LLM availability status section with troubleshooting guidance"""
+```
+
+**Content:**
+- Available LLMs list
+- Unavailable LLMs list
+- Last check timestamp
+- Troubleshooting guidance
+- System status information
 
 ### Scoring Overview
 ```python
 def _create_scoring_overview(self, results: Dict[str, Any]) -> List:
-    """Create comprehensive scoring tables and charts"""
+    """Create comprehensive scoring tables and charts with status indicators"""
 ```
 
 **Elements:**
-- Overall rankings table
+- Overall rankings table with status column
 - Criteria-based scoring
 - Judge agreement analysis
 - Visual score comparisons
+- Color-coded status indicators (green for completed, red for NA)
 
 ### Detailed Analysis
 ```python
 def _create_detailed_analysis(self, results: Dict[str, Any]) -> List:
-    """Create detailed plan-by-plan analysis"""
+    """Create detailed plan-by-plan analysis with NA section support"""
 ```
 
 **Content:**
@@ -252,11 +246,38 @@ def _create_detailed_analysis(self, results: Dict[str, Any]) -> List:
 - Strengths and weaknesses
 - Improvement recommendations
 - Technical details
+- NA sections for unavailable evaluations
+
+### NA Evaluation Section
+```python
+def _create_na_evaluation_section(self, plan_name: str, llm_type: str, reason: str) -> List:
+    """Generate standardized NA section for unavailable evaluations"""
+```
+
+**Content:**
+- Plan name and status
+- LLM type that was unavailable
+- Reason for unavailability
+- Troubleshooting guidance
+- Professional formatting
+
+### Completed Evaluation Section
+```python
+def _create_completed_evaluation_section(self, plan_name: str, plan_data: Dict[str, Any]) -> List:
+    """Generate standardized section for completed evaluations"""
+```
+
+**Content:**
+- Plan name and status
+- Complete evaluation results
+- Scores and analysis
+- Strengths and weaknesses
+- Recommendations
 
 ### Synthesis Section
 ```python
 def _create_synthesis_section(self, results: Dict[str, Any]) -> List:
-    """Create synthesis recommendations and next steps"""
+    """Create synthesis recommendations and next steps with resilience context"""
 ```
 
 **Elements:**
@@ -264,6 +285,7 @@ def _create_synthesis_section(self, results: Dict[str, Any]) -> List:
 - Implementation guidance
 - Risk considerations
 - Success metrics
+- Partial evaluation considerations
 
 ## 🎯 Styling and Formatting
 
@@ -272,12 +294,14 @@ def _create_synthesis_section(self, results: Dict[str, Any]) -> List:
 - **Consistent Branding**: Unified visual identity
 - **Table Styling**: Professional table layouts with proper formatting
 - **Chart Integration**: High-quality embedded visualizations
+- **Status Indicators**: Color-coded sections for NA vs completed evaluations
 
 ### Template System
 - **Flexible Templates**: Customizable report structures
 - **Consistent Layout**: Standardized page layouts and styling
 - **Dynamic Content**: Adaptive content based on evaluation results
 - **Professional Quality**: Enterprise-grade report appearance
+- **NA Handling**: Standardized NA section templates
 
 ## 📈 Chart Integration
 
@@ -287,23 +311,17 @@ def _create_synthesis_section(self, results: Dict[str, Any]) -> List:
 import matplotlib.pyplot as plt
 
 def _create_score_chart(self, data: Dict) -> plt.Figure:
-    """Create score comparison chart for PDF"""
+    """Create score comparison chart for PDF with NA handling"""
 ```
 
 ### Chart Types
-- **Bar Charts**: Score comparisons
+- **Bar Charts**: Score comparisons with NA indicators
 - **Radar Charts**: Multi-criteria analysis
 - **Scatter Plots**: Judge agreement visualization
-- **Tables**: Detailed scoring breakdowns
+- **Tables**: Detailed scoring breakdowns with status columns
+- **Completion Charts**: Visual representation of completion statistics
 
 ## 🔧 Configuration Options
-
-### Output Settings
-```python
-# Default configuration
-self.output_dir = Path("output/reports")
-self.styles = getSampleStyleSheet()
-```
 
 ### PDF Settings
 ```python
@@ -329,25 +347,42 @@ pdf_path = generator.generate_pdf_report(
 )
 ```
 
-### CSV Export
+### CSV Export with NA Support
 ```python
 csv_path = generator.generate_csv_export(evaluation_results)
 ```
 
 ### Complete Package
 ```python
-package_paths = generator.generate_complete_report_package(
+package_paths = generator.generate_cli_report_package(
     evaluation_results,
     output_dir=Path("output/complete_reports")
 )
 ```
 
-### Custom Executive Summary
+### Completion Summary Report
 ```python
-exec_path = generator._generate_executive_summary(
+summary_path = generator.generate_completion_summary_report(
     evaluation_results,
-    output_path=Path("custom_executive.pdf")
+    output_path=Path("completion_summary.pdf")
 )
+```
+
+### NA Section Generation
+```python
+na_section = generator._create_na_evaluation_section(
+    "Plan A",
+    "GPT-4",
+    "Rate limit exceeded"
+)
+```
+
+### Availability Status Section
+```python
+availability_section = generator._create_availability_status_section({
+    "Gemini Pro": True,
+    "GPT-4": False
+})
 ```
 
 ## 📊 Data Requirements
@@ -360,16 +395,36 @@ evaluation_results = {
         "timestamp": datetime,
         "plans_evaluated": int
     },
+    "completion_statistics": {
+        "total_plans": int,
+        "completed_evaluations": int,
+        "na_evaluations": int,
+        "failed_evaluations": int,
+        "available_llms": List[str],
+        "unavailable_llms": List[str],
+        "completion_percentage": float
+    },
+    "resilience_info": {
+        "partial_evaluation": bool,
+        "available_llms": List[str],
+        "unavailable_llms": List[str],
+        "na_evaluations_count": int,
+        "completion_percentage": float,
+        "resilience_timestamp": str
+    },
     "plans": {
         "plan_name": {
+            "status": "completed" | "NA" | "failed",
             "scores": {
                 "primary_score": float,
-                "secondary_score": float, 
+                "secondary_score": float | None, 
                 "final_score": float
             },
             "criteria_scores": Dict[str, float],
             "analysis": str,
-            "recommendations": List[str]
+            "recommendations": List[str],
+            "llm_used": str,
+            "na_reason": str | None
         }
     },
     "comparative_analysis": {
@@ -391,6 +446,12 @@ evaluation_results = {
 - **Input Validation**: Comprehensive input data checking
 - **Format Verification**: Data structure validation
 - **Error Recovery**: Graceful error handling with informative messages
+- **NA Handling**: Proper handling of missing or unavailable data
+
+### Resilience Support
+- **Partial Data**: Handle incomplete evaluation results
+- **NA Values**: Proper formatting of unavailable evaluations
+- **Status Tracking**: Maintain evaluation status throughout processing
 
 ## 📚 Dependencies
 
@@ -403,4 +464,4 @@ evaluation_results = {
 
 ---
 
-For complete implementation examples, see the [Phase 4 Implementation Guide](../development/phase4-complete.md).
+For complete implementation examples, see the [Phase 4 Implementation Guide](../development/phase4-complete.md) and [LLM Error Resilience Feature](../features/llm-error-resilience.md).
