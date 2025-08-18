@@ -19,7 +19,7 @@ class LLMConfig(BaseModel):
 
     gemini_api_key: str
     openai_api_key: str
-    gemini_model: str = "gemini-pro"
+    gemini_model: str = "gemini-1.5-pro"
     openai_model: str = "gpt-4"
     temperature: float = 0.1  # Low temperature for consistent evaluation
     max_tokens: Optional[int] = None

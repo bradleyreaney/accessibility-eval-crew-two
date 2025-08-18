@@ -29,7 +29,7 @@ Essential quick reference materials for the accessibility evaluation system.
 ### Essential Commands
 ```bash
 # Launch application
-streamlit run app/main.py
+
 
 # Run tests
 python -m pytest tests/unit/ -v
@@ -138,8 +138,8 @@ pip install --upgrade pdfplumber PyPDF2
 pip install -r requirements.txt
 pip install -r requirements-test.txt
 
-# Streamlit issues
-streamlit cache clear
+
+
 ```
 
 ### Performance Issues

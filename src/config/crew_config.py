@@ -110,7 +110,7 @@ class AccessibilityEvaluationCrew:
             ],
             tasks=evaluation_tasks,
             process=Process.sequential,  # Sequential to ensure proper task ordering
-            verbose=True,
+            verbose=False,  # Disable verbose to reduce callback warnings
         )
 
         evaluation_results = evaluation_crew.kickoff()
@@ -136,7 +136,7 @@ class AccessibilityEvaluationCrew:
             agents=[self.agents["comparison_agent"].agent],
             tasks=[comparison_task],
             process=Process.sequential,
-            verbose=True,
+            verbose=False,  # Disable verbose to reduce callback warnings
         )
 
         comparison_result = comparison_crew.kickoff()
@@ -157,7 +157,7 @@ class AccessibilityEvaluationCrew:
             agents=[self.agents["synthesis_agent"].agent],
             tasks=[synthesis_task],
             process=Process.sequential,
-            verbose=True,
+            verbose=False,  # Disable verbose to reduce callback warnings
         )
 
         synthesis_result = synthesis_crew.kickoff()
@@ -197,7 +197,7 @@ class AccessibilityEvaluationCrew:
             ],
             tasks=evaluation_tasks,
             process=Process.sequential,  # Use sequential as parallel not available
-            verbose=True,
+            verbose=False,  # Disable verbose to reduce callback warnings
         )
 
         results = parallel_crew.kickoff()

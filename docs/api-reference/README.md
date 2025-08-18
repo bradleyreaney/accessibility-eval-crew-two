@@ -5,7 +5,6 @@ Complete API documentation for all system components.
 ## 🎯 Component Documentation
 
 ### Core Applications
-- **[streamlit-app.md](./streamlit-app.md)** - Streamlit web interface API
 - **[report-generator.md](./report-generator.md)** - PDF generation and export functionality
 
 ### Agents & Tools

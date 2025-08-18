@@ -50,7 +50,8 @@ This directory contains comprehensive development documentation for the LLM-as-a
 - **Black**: Code formatting
 - **Flake8**: Code linting and style checking
 - **mypy**: Static type checking
-- **Streamlit**: Local web interface (Phase 4)
+- **CLI**: Local command-line interface (Phase 4)
+// ...existing code...
 
 ### Local Development Tools
 - **Virtual Environment**: Python venv for dependency isolation
@@ -109,7 +110,8 @@ This directory contains comprehensive development documentation for the LLM-as-a
 ### External Resources
 - **[CrewAI Documentation](https://docs.crewai.com/)**
 - **[WCAG Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)**
-- **[Streamlit Documentation](https://docs.streamlit.io/)**
+- **[CLI Documentation](https://docs.python.org/3/library/argparse.html)**
+// ...existing code...
 
 ## 🤝 Contributing
 

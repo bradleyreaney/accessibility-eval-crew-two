@@ -1,3 +1,4 @@
+<!-- No references to Streamlit found in this document. -->
 # Pre-commit Hooks Setup Guide
 
 ## Overview

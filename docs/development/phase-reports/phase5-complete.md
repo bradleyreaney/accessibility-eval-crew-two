@@ -112,7 +112,7 @@ Phase 5 components integrate seamlessly with existing architecture:
 - **Unified API** maintains consistency with previous phases
 
 ### Enterprise Readiness
-- **Production-ready deployment** with Docker support
+- **Production-ready deployment** with CLI support
 - **Scalable architecture** supporting growth requirements
 - **Monitoring and alerting** for operational visibility
 - **Configuration management** for different environments
@@ -169,16 +169,17 @@ print(f"Cache hit rate: {metrics.cache_hit_rate}%")
 
 ## 🚀 Production Deployment
 
-### Docker Support
+### CLI Support
 ```bash
-# Build production image
-docker build -t accessibility-eval-system .
+# Install dependencies
+pip install -r requirements.txt
 
 # Run with environment configuration
-docker run -p 8501:8501 \
-  -e GOOGLE_API_KEY=$GOOGLE_API_KEY \
-  -e OPENAI_API_KEY=$OPENAI_API_KEY \
-  accessibility-eval-system
+python main.py \
+  --audit-dir data/audit-reports \
+  --plans-dir data/remediation-plans \
+  --mode parallel \
+  --consensus advanced
 ```
 
 ### Environment Configuration

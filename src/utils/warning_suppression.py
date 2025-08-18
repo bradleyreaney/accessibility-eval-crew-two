@@ -1,16 +1,30 @@
 """
-Early warning suppression - import this FIRST before any other modules
-This module provides comprehensive warning suppression for the LLM Judge system
+Advanced warning suppression for CrewAI and LangChain components.
+
+This module provides comprehensive warning suppression to eliminate noise
+from CrewAI callback handlers and other third-party library warnings.
+
+References:
+    - CrewAI callback handling issues
+    - LangChain warning suppression
+    - Runtime warning management
 """
 
+import logging
 import os
 import warnings
+from contextlib import contextmanager
+from typing import Any, Dict
 
-# Set environment variables for C-level warning suppression
-os.environ["PYTHONWARNINGS"] = "ignore::DeprecationWarning,ignore::UserWarning"
+# Set environment variables for maximum warning suppression
+os.environ["PYTHONWARNINGS"] = (
+    "ignore::DeprecationWarning,ignore::UserWarning,ignore::FutureWarning"
+)
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
-# Apply all warning filters
+# Apply all warning filters immediately
 warnings.filterwarnings("ignore")
 warnings.simplefilter("ignore")
 
@@ -18,8 +32,9 @@ warnings.simplefilter("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-# Additional filters for the specific messages
+# Additional filters for specific messages
 warnings.filterwarnings("ignore", message=".*pkg_resources.*")
 warnings.filterwarnings("ignore", message=".*declare_namespace.*")
 warnings.filterwarnings("ignore", message=".*Pydantic.*")
@@ -27,9 +42,150 @@ warnings.filterwarnings("ignore", message=".*@validator.*")
 warnings.filterwarnings("ignore", message=".*__fields__.*")
 warnings.filterwarnings("ignore", message=".*schema.*method.*")
 warnings.filterwarnings("ignore", message=".*config.*deprecated.*")
+warnings.filterwarnings("ignore", message=".*crewai_tools.*")
+warnings.filterwarnings("ignore", message=".*AttributeError.*")
 
 # Module-specific suppressions
 warnings.filterwarnings("ignore", module="pkg_resources")
 warnings.filterwarnings("ignore", module="crewai")
 warnings.filterwarnings("ignore", module="pydantic")
 warnings.filterwarnings("ignore", module="google")
+warnings.filterwarnings("ignore", module="langchain")
+warnings.filterwarnings("ignore", module="crewai_tools")
+
+
+@contextmanager
+def suppress_warnings():
+    """
+    Context manager to suppress warnings during crew execution.
+
+    Temporarily disables warnings to provide clean output during evaluation.
+    """
+    # Save current warning state
+    old_warnings = list(warnings.filters)
+    old_level = logging.getLogger().level
+
+    try:
+        # Clear and reset all warning filters
+        warnings.resetwarnings()
+        warnings.filterwarnings("ignore")
+
+        # Set logging to ERROR level to suppress INFO messages
+        logging.getLogger().setLevel(logging.ERROR)
+        logging.getLogger("crewai").setLevel(logging.ERROR)
+        logging.getLogger("langchain").setLevel(logging.ERROR)
+        logging.getLogger("pydantic").setLevel(logging.ERROR)
+
+        yield
+
+    finally:
+        # Restore original warning filters
+        warnings.resetwarnings()
+        for filter_item in old_warnings:
+            warnings.filterwarnings(*filter_item)
+        logging.getLogger().setLevel(old_level)
+
+
+@contextmanager
+def suppress_all_warnings():
+    """
+    Context manager to suppress all warnings during execution.
+
+    This includes CrewAI callbacks, deprecation warnings, and runtime warnings.
+    """
+    # Save current warning state
+    old_warnings = list(warnings.filters)
+    old_logging_level = logging.getLogger().level
+
+    try:
+        # Suppress all warnings completely
+        warnings.resetwarnings()
+        warnings.filterwarnings("ignore")
+        warnings.simplefilter("ignore")
+
+        # Set logging level to CRITICAL to suppress everything
+        logging.getLogger().setLevel(logging.CRITICAL)
+
+        # Suppress specific loggers completely
+        logger_names = [
+            "pkg_resources",
+            "pydantic",
+            "crewai",
+            "langchain",
+            "crewai_tools",
+            "httpx",
+            "urllib3",
+        ]
+        disabled_loggers = []
+
+        for logger_name in logger_names:
+            logger = logging.getLogger(logger_name)
+            if not logger.disabled:
+                disabled_loggers.append(logger_name)
+                logger.setLevel(logging.CRITICAL)
+                logger.disabled = True
+
+        yield
+
+    finally:
+        # Restore warning state
+        warnings.resetwarnings()
+        for filter_item in old_warnings:
+            warnings.filterwarnings(*filter_item)
+        logging.getLogger().setLevel(old_logging_level)
+
+        # Re-enable loggers that we disabled
+        for logger_name in disabled_loggers:
+            logging.getLogger(logger_name).disabled = False
+
+
+def configure_quiet_logging():
+    """Configure logging to suppress verbose outputs from dependencies."""
+    # Suppress specific library loggers
+    logger_names = [
+        "crewai",
+        "langchain",
+        "openai",
+        "httpx",
+        "pkg_resources",
+        "pydantic",
+        "crewai_tools",
+    ]
+    for logger_name in logger_names:
+        logging.getLogger(logger_name).setLevel(logging.ERROR)
+
+    # General suppression of deprecation warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    warnings.filterwarnings("ignore", category=UserWarning)
+
+
+def configure_silent_environment():
+    """
+    Configure the environment for silent operation.
+
+    This sets environment variables and logging levels to minimize
+    all output from third-party libraries.
+    """
+    # Environment variables to suppress various outputs
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+    os.environ["LANGCHAIN_VERBOSE"] = "false"
+    os.environ["CREWAI_VERBOSE"] = "false"
+
+    # Configure logging
+    logger_names = [
+        "crewai",
+        "langchain",
+        "openai",
+        "google",
+        "httpx",
+        "urllib3",
+        "pkg_resources",
+        "pydantic",
+    ]
+    for logger_name in logger_names:
+        logging.getLogger(logger_name).setLevel(logging.CRITICAL)
+
+    # Suppress warnings globally
+    warnings.filterwarnings("ignore")

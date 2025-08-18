@@ -38,11 +38,12 @@ class BatchProcessor:
     """
 
     def __init__(self, crew_manager, max_concurrent_jobs: int = 3):
+        """Initialize the batch processor with crew manager and concurrent job limit."""
         self.crew_manager = crew_manager
         self.max_concurrent_jobs = max_concurrent_jobs
-        self.active_jobs = {}
-        self.job_queue = []
-        self.completed_jobs = {}
+        self.active_jobs: Dict[str, BatchJob] = {}
+        self.job_queue: List[BatchJob] = []
+        self.completed_jobs: Dict[str, BatchJob] = {}
         self.executor = ThreadPoolExecutor(max_workers=max_concurrent_jobs)
 
     def submit_batch_job(
@@ -181,7 +182,7 @@ class BatchProcessor:
 
     def _generate_batch_summary(self, batch_results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate summary statistics across all evaluations in batch"""
-        summary = {
+        summary: Dict[str, Any] = {
             "total_evaluations": len(batch_results),
             "average_scores": {},
             "best_performing_plans": {},
@@ -190,7 +191,7 @@ class BatchProcessor:
         }
 
         # Aggregate scores across all evaluations
-        all_plan_scores = {}
+        all_plan_scores: Dict[str, List[float]] = {}
 
         for audit_name, result in batch_results.items():
             if hasattr(result, "plan_scores"):
@@ -342,6 +343,7 @@ class HistoricalAnalysis:
     """
 
     def __init__(self):
+        """Initialize the historical analysis system for tracking evaluation trends."""
         self.evaluation_database = []
 
     def add_batch_results(self, batch_results: Dict[str, Any]):

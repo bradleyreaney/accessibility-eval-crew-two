@@ -21,8 +21,8 @@ Practical examples for using the accessibility evaluation system.
 - **[report-generation.md](./report-generation.md)** - Creating professional PDF reports
 - **[export-examples.md](./export-examples.md)** - CSV, JSON, and multi-format exports
 
-### 🌐 Streamlit UI Examples
-- **[streamlit-components.md](./streamlit-components.md)** - UI component usage
+
+
 - **[custom-visualizations.md](./custom-visualizations.md)** - Creating custom charts
 
 ### 🏗️ Advanced Examples
@@ -55,9 +55,9 @@ print(f"Score: {result['weighted_score']}")
 
 ### Complete Web Application
 ```python
-# Launch the full Streamlit interface
+
 import subprocess
-subprocess.run(["streamlit", "run", "app/main.py"])
+
 ```
 
 ### Batch Processing

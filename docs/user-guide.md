@@ -1,3 +1,4 @@
+// ...existing code...
 # User Guide
 
 Complete guide for accessibility professionals using the evaluation system.
@@ -9,148 +10,77 @@ This system helps you evaluate and compare accessibility remediation plans using
 ## 🚀 Getting Started
 
 ### What You Need
+### What You Need
 - **Accessibility audit report** (PDF format)
 - **Remediation plans to compare** (PDF format, up to 10 plans)
-- **Web browser** (Chrome, Firefox, Safari, or Edge)
 - **Internet connection** (for AI analysis)
+- **API Keys** (Gemini Pro and GPT-4 - required as environment variables)
 
 ### 5-Minute Setup
 1. **Download the system** from the repository
 2. **Install Python 3.11+** if not already installed
-3. **Get AI API keys** (Gemini Pro and GPT-4 - see setup guide)
-4. **Launch the application** with `streamlit run app/main.py`
-5. **Open your browser** to `http://localhost:8501`
+3. **Get AI API keys** (Gemini Pro and GPT-4 - see setup guide below)
+4. **Configure environment variables** (REQUIRED - see Configuration section below)
+5. **Run the CLI** with `python main.py --audit-dir data/audit-reports --plans-dir data/remediation-plans [other options]`
+6. **Review generated reports** in `output/reports/`
 
-## 🌐 Using the Web Interface
+### � Required Configuration
 
-### Dashboard Overview
+**Environment Variables Required**: This application uses environment-only configuration for enhanced security. Both API keys must be set as environment variables before starting the application.
+
+#### For Local Development:
+1. Copy `.env.example` to `.env` in the project root
+2. Edit the `.env` file with your API keys:
+```bash
+GOOGLE_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    📊 Evaluation Dashboard                  │
-├─────────────────┬───────────────────────────────────────────┤
-│   File Upload   │           Results Display                 │
-│                 │                                           │
-│ • Audit Report  │  ┌─────────────────────────────────────┐  │
-│ • Plan A        │  │         Ranking Results             │  │
-│ • Plan B        │  │  1. Plan C (8.7/10) 🏆            │  │
-│ • Plan C        │  │  2. Plan A (7.9/10) 🥈            │  │
-│ • ...           │  │  3. Plan B (6.5/10) 🥉            │  │
-│                 │  └─────────────────────────────────────┘  │
-│ [Start Analysis]│                                           │
-├─────────────────┼───────────────────────────────────────────┤
-│   Progress      │          Visualizations                   │
-│                 │                                           │
-│ ████████░░ 80%  │  📈 Radar Chart  📊 Bar Chart           │
-│ Evaluating...   │  📉 Scatter Plot  🔄 Comparison         │
-└─────────────────┴───────────────────────────────────────────┘
+3. Restart the application
+
+#### For Production/Server Deployment:
+Set environment variables in your deployment platform:
+- `GOOGLE_API_KEY=your_gemini_api_key`
+- `OPENAI_API_KEY=your_openai_api_key`
+
+**⚠️ Important**: The CLI will not run without both environment variables properly configured. You can set them in your `.env` file or export them in your shell.
+
+
+## �️ Using the Command-Line Interface (CLI)
+
+All user interaction is now via the CLI. The previous browser-based workflows and Docker/container deployment are deprecated and no longer supported.
+
+### Step 1: Prepare Your Files
+
+- Place your audit report PDF(s) in `data/audit-reports/`
+- Place your remediation plan PDF(s) in `data/remediation-plans/`
+
+### Step 2: Run the Evaluation
+
+Use the CLI to start the analysis:
+```bash
+python main.py --audit-dir data/audit-reports --plans-dir data/remediation-plans [other options]
 ```
 
-### Step 1: Upload Your Files
-
-#### Audit Report Upload
-1. **Click "Upload Audit Report"** in the sidebar
-2. **Select your PDF file** (accessibility audit report)
-3. **Wait for processing** - you'll see the document title and page count
-4. **Verify content** - check that key findings are visible in the preview
-
-#### Remediation Plans Upload
-1. **Click "Upload Remediation Plans"** 
-2. **Select multiple PDF files** (hold Ctrl/Cmd for multiple selection)
-3. **Review plan list** - each plan will show title and page count
-4. **Add more plans** if needed (up to 10 total)
-
-#### Supported File Types
-- **PDF only** - other formats not currently supported
-- **Maximum size**: 50MB per file
-- **Text-based PDFs** work best (scanned PDFs may have issues)
-
-### Step 2: Start the Evaluation
-
-#### Launch Analysis
-1. **Click "Start Evaluation"** button
-2. **Monitor progress** in the sidebar progress bar
-3. **View real-time status** updates:
-   - "Parsing documents..." 
-   - "Initializing AI agents..."
-   - "Primary judge evaluating Plan A..."
-   - "Secondary judge evaluating Plan A..."
-   - "Calculating consensus scores..."
-   - "Generating final analysis..."
-
-#### Processing Time
-- **Single plan**: ~2-3 minutes
-- **Multiple plans**: ~5-10 minutes
-- **Complex plans**: Up to 15 minutes
+#### Common options:
+- `--output output/reports/` (set output directory)
+- `--mode single|parallel|sequential` (choose evaluation mode)
+- `--timeout 30` (set timeout in seconds)
+- `--verbose` (show detailed logs)
 
 ### Step 3: Review Results
 
-#### Rankings Dashboard
-```
-🏆 Final Rankings
-┌──────────┬───────────────┬─────────┬──────────────────────┐
-│   Rank   │   Plan Name   │  Score  │    Key Strengths     │
-├──────────┼───────────────┼─────────┼──────────────────────┤
-│    1     │   Plan C      │  8.7    │ Strategic focus,     │
-│          │               │         │ detailed technical   │
-├──────────┼───────────────┼─────────┼──────────────────────┤
-│    2     │   Plan A      │  7.9    │ Comprehensive,       │
-│          │               │         │ good long-term       │
-├──────────┼───────────────┼─────────┼──────────────────────┤
-│    3     │   Plan B      │  6.5    │ Adequate coverage,   │
-│          │               │         │ needs refinement     │
-└──────────┴───────────────┴─────────┴──────────────────────┘
-```
+After completion, reports will be generated in the output directory:
+- **PDF Reports**: Executive Summary, Detailed Report, Comparative Analysis, Summary Report
+- **CSV/JSON Exports**: For further analysis
 
-#### Detailed Score Breakdown
-For each plan, you'll see scores across four criteria:
+### Step 4: Interpreting Results
 
-**🎯 Strategic Prioritization (40%)**
-- How well the plan focuses on high-impact accessibility issues
-- Example: "Prioritizes critical keyboard navigation issues affecting all users"
+Open the generated PDF, CSV, or JSON files to review rankings, scores, and detailed breakdowns for each plan. All scoring criteria and methodology remain unchanged from the previous UI.
 
-**🔧 Technical Specificity (30%)**  
-- Quality of implementation guidance and technical detail
-- Example: "Provides specific ARIA label examples and code snippets"
-
-**📋 Comprehensiveness (20%)**
-- Coverage of all identified accessibility barriers
-- Example: "Addresses 18 of 20 audit findings with clear solutions"
-
-**🚀 Long-term Vision (10%)**
-- Sustainability and ongoing accessibility planning
-- Example: "Includes staff training and automated testing integration"
-
-#### Interactive Visualizations
-
-**📊 Radar Chart**: Compare plans across all four criteria
-```
-        Strategic (8.5)
-             ╱│╲
-      (7.2) ╱ │ ╲ (8.0)
-   Technical│ │ │Long-term
-           ╱   │   ╲
-          ╱    │    ╲
-    (6.8) ──────────── 
-      Comprehensive
-```
-
-**📈 Scatter Plot**: View score distribution and identify outliers
-**📊 Bar Chart**: Direct comparison of overall scores
-
-### Step 4: Download Reports
-
-#### Available Report Formats
-
-**📄 PDF Reports** (4 types available):
-- **Executive Summary**: 2-page overview for leadership
-- **Detailed Report**: Complete analysis with full reasoning
-- **Comparative Analysis**: Side-by-side plan comparison
-- **Summary Report**: Quick reference with key findings
-
-**📊 Data Exports**:
-- **CSV**: Spreadsheet-compatible scores and rankings
-- **JSON**: Complete data for further analysis
-
+### CLI Tips
+- Ensure your environment variables are set before running the CLI
+- Use text-based PDFs for best results
+- Review logs for troubleshooting information
 #### Using the Reports
 
 **For Leadership Presentations**:

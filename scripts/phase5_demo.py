@@ -141,7 +141,7 @@ def main():
     # Integration with Previous Phases
     print(f"\n🔗 Integration with Previous Phases:")
     print(f"   ✅ Seamless integration with Phase 1-4 components")
-    print(f"   ✅ Enhanced Streamlit interface with advanced features")
+    print(f"   ✅ Enhanced CLI interface with advanced features")
     print(f"   ✅ Backward compatibility maintained")
     print(f"   ✅ Professional reporting enhanced with batch capabilities")
 
@@ -150,8 +150,8 @@ def main():
     print(
         f"   1. Run validation script: python scripts/validate_phase5_quality_gates.py"
     )
-    print(f"   2. Launch Streamlit interface: streamlit run app/main.py")
-    print(f"   3. Test advanced features through the web interface")
+    print(f"   2. Launch CLI interface: python main.py --help")
+    print(f"   3. Test advanced features through the CLI interface")
     print(f"   4. Monitor performance improvements in real-time")
 
     return True

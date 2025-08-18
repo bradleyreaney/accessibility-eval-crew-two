@@ -291,10 +291,10 @@ class Phase5QualityGateValidator:
             gates["workflow_integration"] = True
             print("✅ Workflow integration functional")
 
-            # Test Streamlit app integration
-            app_file = self.project_root / "app" / "main.py"
-            gates["streamlit_integration"] = app_file.exists()
-            print("✅ Streamlit app integration ready")
+            # Test CLI app integration
+            app_file = self.project_root / "main.py"
+            gates["cli_integration"] = app_file.exists()
+            print("✅ CLI app integration ready")
 
             # Test backward compatibility with agent initialization
             from src.agents.judge_agent import PrimaryJudgeAgent, SecondaryJudgeAgent
@@ -315,7 +315,7 @@ class Phase5QualityGateValidator:
             gates["end_to_end_integration"] = all(
                 [
                     gates.get("workflow_integration", False),
-                    gates.get("streamlit_integration", False),
+                    gates.get("cli_integration", False),
                     gates.get("backward_compatibility", False),
                     gates.get("report_integration", False),
                 ]
@@ -325,7 +325,7 @@ class Phase5QualityGateValidator:
         except Exception as e:
             print(f"❌ System integration validation failed: {e}")
             gates["workflow_integration"] = False
-            gates["streamlit_integration"] = False
+            gates["cli_integration"] = False
             gates["backward_compatibility"] = False
             gates["report_integration"] = False
             gates["end_to_end_integration"] = False

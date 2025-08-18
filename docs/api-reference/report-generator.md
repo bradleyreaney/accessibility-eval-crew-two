@@ -3,6 +3,7 @@
 *Professional PDF and data export functionality for evaluation results*
 
 ## 📄 EvaluationReportGenerator
+    # CLI integration for command-line interface
 
 Enhanced report generator providing professional PDF reports, CSV/JSON exports, and complete report packages.
 

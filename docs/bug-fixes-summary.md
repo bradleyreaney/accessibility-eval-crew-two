@@ -57,7 +57,7 @@ if st.session_state.get("workflow_status"):
 ✅ **All critical errors resolved**
 - App imports successfully
 - App instantiation works without errors  
-- Streamlit server starts without AttributeError
+
 - Progress monitoring displays safely
 
 ✅ **Warning noise reduced**
@@ -83,7 +83,7 @@ if st.session_state.get("workflow_status"):
 
 The app should now run cleanly with:
 ```bash
-streamlit run app/main.py
+
 ```
 
 For health checks, use:

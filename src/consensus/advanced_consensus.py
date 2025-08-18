@@ -44,6 +44,7 @@ class AdvancedConsensusEngine:
     """
 
     def __init__(self):
+        """Initialize the advanced consensus engine with resolution strategies and judge reliability scores."""
         self.resolution_strategies = {
             ConflictSeverity.LOW: self._weighted_average_resolution,
             ConflictSeverity.MEDIUM: self._evidence_based_resolution,
@@ -102,7 +103,7 @@ class AdvancedConsensusEngine:
         Returns:
             Dictionary of resolved scores by plan and criterion
         """
-        resolved_scores = {}
+        resolved_scores: Dict[str, Dict[str, float]] = {}
 
         for conflict in conflicts:
             # Select resolution strategy based on severity
@@ -299,7 +300,7 @@ class AdvancedConsensusEngine:
 ## Conflict Severity Breakdown
 """
 
-        severity_counts = {}
+        severity_counts: Dict[ConflictSeverity, int] = {}
         for conflict in conflicts:
             severity_counts[conflict.severity] = (
                 severity_counts.get(conflict.severity, 0) + 1
@@ -323,7 +324,7 @@ class AdvancedConsensusEngine:
         self, evaluations: List[PlanEvaluation]
     ) -> Dict[str, List[PlanEvaluation]]:
         """Group evaluations by plan name"""
-        plan_groups = {}
+        plan_groups: Dict[str, List[PlanEvaluation]] = {}
         for evaluation in evaluations:
             if evaluation.plan_name not in plan_groups:
                 plan_groups[evaluation.plan_name] = []
@@ -431,6 +432,7 @@ class MetaEvaluationSystem:
     """
 
     def __init__(self):
+        """Initialize the meta evaluation system for tracking judge performance."""
         self.evaluation_history = []
         self.performance_metrics = {}
 
@@ -441,7 +443,7 @@ class MetaEvaluationSystem:
 
     def identify_bias_patterns(self) -> Dict[str, List[str]]:
         """Identify systematic bias patterns in judge evaluations"""
-        bias_patterns = {"gemini": [], "gpt4": []}
+        bias_patterns: Dict[str, List[str]] = {"gemini": [], "gpt4": []}
 
         # Analyze scoring patterns
         for judge in ["gemini", "gpt4"]:
