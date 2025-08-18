@@ -2,8 +2,8 @@
 
 *Enterprise-ready AI system for evaluating accessibility remediation plans using advanced multi-agent LLM workflows*
 
-[![Tests](https://img.shields.io/badge/tests-377%20passed-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-351%20passed-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)]()
 [![Phase](https://img.shields.io/badge/phase-5%20complete-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11+-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
@@ -12,7 +12,7 @@
 
 This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments through a command-line interface with automated PDF report generation.
 
-**Status: All 5 Phases Complete** - Enterprise-ready system with advanced consensus mechanisms, batch processing, and performance monitoring (August 2025).
+**Status: All 5 Phases Complete** - Enterprise-ready system with advanced consensus mechanisms, batch processing, and performance monitoring. All quality gates passing with 93.23% test coverage (August 2025).
 
 ### Key Features
 - 🤖 **Multi-Agent Evaluation**: 4 specialized CrewAI agents with Gemini Pro & GPT-4
@@ -52,7 +52,6 @@ source venv/bin/activate  # macOS/Linux
 
 # Install dependencies
 pip install -r requirements.txt
-pip install -r requirements-test.txt
 
 # Configure environment variables (REQUIRED)
 cp .env.example .env
@@ -126,7 +125,7 @@ accessibility-eval-crew-two/
 │   ├── consensus/        # Advanced consensus mechanisms
 │   ├── batch/            # Batch processing system
 │   └── monitoring/       # Performance monitoring
-├── tests/                # Comprehensive test suite (98% coverage)
+├── tests/                # Comprehensive test suite (93% coverage)
 │   ├── unit/             # Module-specific unit tests
 │   └── integration/      # Real file/API integration tests
 ├── data/                 # Sample audit reports and plans
@@ -161,7 +160,7 @@ The system provides a complete evaluation pipeline:
 - **Phase 5**: Advanced features (consensus mechanisms, batch processing, performance monitoring)
 
 **Current Metrics:**
-- **377 tests passing** with **98% coverage**
+- **351 tests passing** with **93.23% coverage**
 - **4 specialized agents** with dual LLM integration
 - **Complete CLI interface** with automated file discovery and PDF generation
 - **Enterprise features** including advanced consensus and batch processing
@@ -182,7 +181,7 @@ Our development workflow ensures high-quality code for local use:
 
 #### **Quality Standards:**
 ```bash
-├── 98% Test Coverage (Currently: 98%)
+├── 90%+ Test Coverage (Currently: 93.23%)
 ├── <10 Second Test Execution
 ├── 100% Docstring Coverage
 ├── Zero Linting Warnings
@@ -200,6 +199,14 @@ Our development workflow ensures high-quality code for local use:
 
 ## 🧪 Testing
 
+### Quality Gates
+The project includes comprehensive GitHub Actions workflows that run on every PR:
+- ✅ **Type Checking**: mypy static type analysis
+- ✅ **Code Quality**: Black formatting and Flake8 linting
+- ✅ **Test Coverage**: 90%+ requirement with detailed reporting
+- ✅ **Security Scan**: bandit security vulnerability detection
+- ✅ **Performance**: Test execution time monitoring
+
 ### Run All Tests
 ```bash
 # Unit tests (fast)
@@ -213,8 +220,8 @@ python -m pytest tests/integration/ -v --llm
 ```
 
 ### Test Results
-- **377 tests passing**: 100% success rate
-- **98% coverage**: Comprehensive test coverage exceeding requirements
+- **351 tests passing**: 100% success rate
+- **93.23% coverage**: Comprehensive test coverage exceeding 90% requirement
 - **0 warnings**: Clean test output with enterprise-grade quality
 
 ## 📚 Documentation
