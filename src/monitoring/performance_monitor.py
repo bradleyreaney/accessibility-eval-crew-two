@@ -36,6 +36,7 @@ class PerformanceMonitor:
     """
 
     def __init__(self):
+        """Initialize the performance monitor with metrics history and thresholds."""
         self.metrics_history = []
         self.performance_thresholds = {
             "max_memory_mb": 4096,
@@ -284,10 +285,11 @@ class CacheManager:
     """
 
     def __init__(self, max_cache_size_mb: int = 512):
-        self.cache = {}
-        self.cache_metadata = {}
+        """Initialize the cache manager with specified maximum cache size."""
+        self.cache: Dict[str, Any] = {}
+        self.cache_metadata: Dict[str, Dict[str, Any]] = {}
         self.max_cache_size_mb = max_cache_size_mb
-        self.current_cache_size_mb = 0
+        self.current_cache_size_mb: float = 0.0
         self.hit_count = 0
         self.miss_count = 0
 

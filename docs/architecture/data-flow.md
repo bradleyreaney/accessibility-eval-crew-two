@@ -380,7 +380,7 @@ except ConflictResolutionError as e:
 - **LLM APIs**: Gemini Pro, GPT-4 integration
 - **PDF Libraries**: pdfplumber, PyPDF2 for parsing
 - **Report Generation**: ReportLab for PDF creation
-- **Web Interface**: Streamlit for user interaction
+
 
 ### Internal Modules
 - **Configuration**: Centralized LLM and system settings

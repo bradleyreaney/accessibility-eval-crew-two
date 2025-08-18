@@ -514,3 +514,267 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             raise Exception(f"Failed to generate complete report package: {e}")
 
         return report_paths
+
+    def generate_cli_report_package(
+        self,
+        evaluation_results: Dict[str, Any],
+        report_types: List[str],
+        output_dir: Path,
+        metadata: Dict[str, Any],
+    ) -> Dict[str, Path]:
+        """
+        Generate complete report package for CLI execution.
+
+        Args:
+            evaluation_results: Results from evaluation process
+            report_types: List of report types to generate
+            output_dir: Output directory for reports
+            metadata: CLI execution metadata
+
+        Returns:
+            Dict mapping report types to generated file paths
+        """
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        report_paths = {}
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        try:
+            # Generate execution summary first (always included)
+            exec_summary_path = output_dir / f"execution_summary_{timestamp}.pdf"
+            report_paths["execution_summary"] = self.create_execution_summary_report(
+                evaluation_results, metadata, exec_summary_path
+            )
+
+            # Generate requested report types
+            for report_type in report_types:
+                if report_type == "comprehensive":
+                    report_paths[report_type] = self.generate_pdf_report(
+                        evaluation_results,
+                        output_path=output_dir
+                        / f"comprehensive_report_{timestamp}.pdf",
+                        report_type="comprehensive",
+                    )
+                elif report_type == "executive":
+                    report_paths[report_type] = self._generate_executive_summary(
+                        evaluation_results,
+                        output_dir / f"executive_summary_{timestamp}.pdf",
+                    )
+                elif report_type == "detailed":
+                    report_paths[report_type] = self._generate_detailed_analysis(
+                        evaluation_results,
+                        output_dir / f"detailed_analysis_{timestamp}.pdf",
+                    )
+                elif report_type == "comparative":
+                    report_paths[report_type] = self._generate_comparison_analysis(
+                        evaluation_results,
+                        output_dir / f"comparison_analysis_{timestamp}.pdf",
+                    )
+                elif report_type == "synthesis":
+                    report_paths[report_type] = (
+                        self._generate_synthesis_recommendations(
+                            evaluation_results,
+                            output_dir / f"synthesis_recommendations_{timestamp}.pdf",
+                        )
+                    )
+                elif report_type == "judge_agreement":
+                    report_paths[report_type] = self._generate_judge_agreement_analysis(
+                        evaluation_results,
+                        output_dir / f"judge_agreement_{timestamp}.pdf",
+                    )
+
+            # Always generate data exports
+            report_paths["csv"] = self.generate_csv_export(
+                evaluation_results, output_dir / f"evaluation_data_{timestamp}.csv"
+            )
+            report_paths["json"] = self.generate_json_export(
+                evaluation_results, output_dir / f"evaluation_data_{timestamp}.json"
+            )
+
+        except Exception as e:
+            raise Exception(f"Failed to generate CLI report package: {e}")
+
+        return report_paths
+
+    def create_execution_summary_report(
+        self,
+        evaluation_results: Dict[str, Any],
+        execution_metadata: Dict[str, Any],
+        output_path: Path,
+    ) -> Path:
+        """
+        Create execution summary with CLI arguments and timing.
+
+        Args:
+            evaluation_results: Evaluation results
+            execution_metadata: CLI execution metadata
+            output_path: Path for output file
+
+        Returns:
+            Path to generated report
+        """
+        try:
+            # Create PDF document
+            doc = SimpleDocTemplate(
+                str(output_path),
+                pagesize=letter,
+                rightMargin=72,
+                leftMargin=72,
+                topMargin=72,
+                bottomMargin=18,
+            )
+
+            story = []
+
+            # Title
+            title = Paragraph(
+                "Accessibility Evaluation - Execution Summary", self.styles["Title"]
+            )
+            story.append(title)
+            story.append(Spacer(1, 0.5 * inch))
+
+            # Execution metadata
+            story.append(Paragraph("Execution Configuration", self.styles["Heading2"]))
+
+            config = execution_metadata.get("configuration", {})
+            metadata_items = [
+                (
+                    "Execution Time",
+                    execution_metadata.get("execution_timestamp", "Unknown"),
+                ),
+                (
+                    "Duration",
+                    f"{execution_metadata.get('duration_minutes', 0):.1f} minutes",
+                ),
+                ("Mode", config.get("execution_mode", "Unknown")),
+                (
+                    "Consensus Enabled",
+                    "Yes" if config.get("consensus_enabled") else "No",
+                ),
+                ("Audit Directory", config.get("audit_dir", "Unknown")),
+                ("Plans Directory", config.get("plans_dir", "Unknown")),
+                ("Output Directory", config.get("output_dir", "Unknown")),
+                ("Report Types", config.get("report_types", "Unknown")),
+            ]
+
+            for label, value in metadata_items:
+                story.append(
+                    Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"])
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+            story.append(PageBreak())
+
+            # File processing summary
+            story.append(Paragraph("File Processing Summary", self.styles["Heading2"]))
+
+            audit_files = execution_metadata.get("audit_files", [])
+            plan_files = execution_metadata.get("plan_files", [])
+
+            story.append(
+                Paragraph(
+                    f"<b>Audit Reports Processed:</b> {len(audit_files)}",
+                    self.styles["Normal"],
+                )
+            )
+            for file_name in audit_files:
+                story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
+
+            story.append(Spacer(1, 0.2 * inch))
+            story.append(
+                Paragraph(
+                    f"<b>Remediation Plans Processed:</b> {len(plan_files)}",
+                    self.styles["Normal"],
+                )
+            )
+            for file_name in plan_files:
+                story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
+
+            story.append(PageBreak())
+
+            # Results summary
+            story.append(Paragraph("Results Summary", self.styles["Heading2"]))
+
+            if evaluation_results.get("synthesis_plan"):
+                synthesis = evaluation_results["synthesis_plan"]
+                story.append(
+                    Paragraph(
+                        f"<b>Recommended Plan:</b> {synthesis.get('title', 'Unknown')}",
+                        self.styles["Normal"],
+                    )
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+            if evaluation_results.get("plans"):
+                story.append(
+                    Paragraph(
+                        f"<b>Plans Evaluated:</b> {len(evaluation_results['plans'])}",
+                        self.styles["Normal"],
+                    )
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+            # System information
+            story.append(PageBreak())
+            story.append(Paragraph("System Information", self.styles["Heading2"]))
+
+            system_info = execution_metadata.get("system_info", {})
+            env_info = execution_metadata.get("environment", {})
+
+            system_items = [
+                ("Python Version", system_info.get("python_version", "Unknown")),
+                ("Platform", system_info.get("platform", "Unknown")),
+                ("Working Directory", system_info.get("cwd", "Unknown")),
+                (
+                    "Google API Configured",
+                    "Yes" if env_info.get("google_api_configured") else "No",
+                ),
+                (
+                    "OpenAI API Configured",
+                    "Yes" if env_info.get("openai_api_configured") else "No",
+                ),
+            ]
+
+            for label, value in system_items:
+                story.append(
+                    Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"])
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+            # Build PDF
+            doc.build(story)
+            return output_path
+
+        except Exception:
+            # Fallback to text report
+            with open(output_path.with_suffix(".txt"), "w") as f:
+                f.write("Execution Summary\n")
+                f.write("================\n\n")
+                f.write(
+                    f"Execution Time: {execution_metadata.get('execution_timestamp', 'Unknown')}\n"
+                )
+                f.write(
+                    f"Duration: {execution_metadata.get('duration_minutes', 0):.1f} minutes\n"
+                )
+                f.write(
+                    f"Files Processed: {len(execution_metadata.get('audit_files', []))} audit reports, {len(execution_metadata.get('plan_files', []))} plans\n"
+                )
+            return output_path.with_suffix(".txt")
+
+    def _generate_judge_agreement_analysis(
+        self, evaluation_results: Dict[str, Any], output_path: Path
+    ) -> Path:
+        """
+        Generate judge agreement analysis report.
+
+        Args:
+            evaluation_results: Evaluation results
+            output_path: Output file path
+
+        Returns:
+            Path to generated report
+        """
+        return self.generate_pdf_report(
+            evaluation_results, output_path=output_path, report_type="judge_agreement"
+        )

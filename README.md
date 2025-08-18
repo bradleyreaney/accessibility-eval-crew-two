@@ -2,17 +2,17 @@
 
 *Enterprise-ready AI system for evaluating accessibility remediation plans using advanced multi-agent LLM workflows*
 
-[![Tests](https://img.shields.io/badge/tests-377%20passed-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-351%20passed-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)]()
 [![Phase](https://img.shields.io/badge/phase-5%20complete-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11+-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 ## 🎯 Overview
 
-This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments through a complete Streamlit web application with enterprise-ready advanced features.
+This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments through a command-line interface with automated PDF report generation.
 
-**Status: All 5 Phases Complete** - Enterprise-ready system with advanced consensus mechanisms, batch processing, and performance monitoring (August 2025).
+**Status: All 5 Phases Complete** - Enterprise-ready system with advanced consensus mechanisms, batch processing, and performance monitoring. All quality gates passing with 93.23% test coverage (August 2025).
 
 ### Key Features
 - 🤖 **Multi-Agent Evaluation**: 4 specialized CrewAI agents with Gemini Pro & GPT-4
@@ -24,11 +24,11 @@ This system leverages **Large Language Models as Judges** to provide comprehensi
 - 📄 **PDF Processing**: Automated parsing of audit reports and remediation plans  
 - 🔍 **Comparative Analysis**: Rank and compare multiple remediation strategies
 - 📋 **Professional Reports**: Detailed evaluation reports with scores and recommendations
-- 🌐 **Complete Web Interface**: Full-featured Streamlit application with interactive dashboard
-- 📊 **Interactive Visualizations**: Plotly charts, radar plots, and comparative analysis
-- 📁 **Export Functionality**: PDF, CSV, and JSON export with download interface
+- 💻 **Command-Line Interface**: Full-featured CLI with automated file discovery
+- 📊 **Automated PDF Reports**: Professional reports generated automatically after evaluation
+- 📁 **Automated File Discovery**: Automatic detection of audit reports and remediation plans
 - 🎯 **WCAG Aligned**: Evaluation framework based on accessibility best practices
-- 🚀 **Advanced Consensus**: Multi-level conflict resolution with human escalation protocols
+- 🚀 **Advanced Consensus**: Multi-level conflict resolution with expert judge coordination
 - ⚡ **Batch Processing**: Parallel evaluation of multiple reports with progress tracking
 - 📈 **Performance Monitoring**: Real-time metrics, intelligent caching, and optimization recommendations
 
@@ -52,9 +52,8 @@ source venv/bin/activate  # macOS/Linux
 
 # Install dependencies
 pip install -r requirements.txt
-pip install -r requirements-test.txt
 
-# Configure environment variables
+# Configure environment variables (REQUIRED)
 cp .env.example .env
 # Edit .env with your API keys:
 # GOOGLE_API_KEY=your_gemini_api_key
@@ -63,11 +62,42 @@ cp .env.example .env
 
 ### Launch the Application
 ```bash
-# Start the Streamlit web interface
-streamlit run app/main.py
+# Run accessibility evaluation with default settings
+python main.py
 
-# The application will open in your browser at:
-# http://localhost:8501
+# Custom evaluation with specific options
+python main.py --mode parallel --consensus --reports executive,detailed
+
+# View all available options
+python main.py --help
+
+# Dry run to validate configuration
+python main.py --dry-run --verbose
+```
+
+**🔒 Environment-Only Configuration**: This application requires both `GOOGLE_API_KEY` and `OPENAI_API_KEY` environment variables to be set before running. The application will validate environment configuration and provide clear error messages if keys are missing.
+
+**CLI Interface**: The application provides a command-line interface suitable for automation, batch processing, and integration with CI/CD pipelines. All evaluation results are generated as professional PDF reports in the `output/reports/` directory.
+
+### Usage Examples
+```bash
+# Basic evaluation with sample data
+python main.py
+
+# Evaluation with custom input directories
+python main.py --audit-dir /path/to/audits --plans-dir /path/to/plans
+
+# Parallel execution with consensus building
+python main.py --mode parallel --consensus --output results/evaluation-$(date +%Y%m%d)
+
+# Generate specific report types
+python main.py --reports comprehensive,executive,judge_agreement
+
+# Dry run to validate setup without running evaluation
+python main.py --dry-run --verbose
+
+# Quick evaluation with timeout
+python main.py --timeout 300 --reports executive
 ```
 
 ### Verification
@@ -75,28 +105,27 @@ streamlit run app/main.py
 # Run tests to verify installation
 python -m pytest tests/unit/ -v
 
-# Run Phase 4 validation and demo
-python scripts/validate_phase4_quality_gates.py
-python scripts/phase4_demo.py
+# Test CLI functionality
+python test_cli_basic.py
 
-# Expected output: All tests pass, 100% quality gates passed, full UI functional
+# Expected output: All tests pass, CLI ready for evaluation
 ```
 
 ## 📁 Project Structure
 
 ```
 accessibility-eval-crew-two/
-├── app/main.py           # Streamlit Web Application
+├── main.py               # CLI Application Entry Point
 ├── src/                  # Core implementation
 │   ├── agents/           # CrewAI agents (judge, scoring, analysis)
-│   ├── config/           # LLM connections and configuration  
+│   ├── config/           # LLM connections and CLI configuration  
 │   ├── models/           # Pydantic data models and validation
-│   ├── tools/            # PDF parsing, prompt management
+│   ├── tools/            # PDF parsing, prompt management, file discovery
 │   ├── reports/          # PDF and export generation
 │   ├── consensus/        # Advanced consensus mechanisms
 │   ├── batch/            # Batch processing system
 │   └── monitoring/       # Performance monitoring
-├── tests/                # Comprehensive test suite (98% coverage)
+├── tests/                # Comprehensive test suite (93% coverage)
 │   ├── unit/             # Module-specific unit tests
 │   └── integration/      # Real file/API integration tests
 ├── data/                 # Sample audit reports and plans
@@ -112,7 +141,7 @@ The system provides a complete evaluation pipeline:
 
 - **PDF Processing**: Automated parsing of audit reports and remediation plans
 - **Multi-Agent Evaluation**: 4 specialized CrewAI agents with dual LLM approach
-- **Streamlit Web Interface**: Complete dashboard with interactive visualizations  
+- **Command-Line Interface**: Complete CLI with automated file discovery and validation
 - **Professional Reports**: PDF generation with scoring and recommendations
 - **Advanced Features**: Consensus mechanisms, batch processing, and performance monitoring
 
@@ -127,13 +156,13 @@ The system provides a complete evaluation pipeline:
 - **Phase 1**: Foundation (PDF processing, LLM integration, data models)
 - **Phase 2**: Multi-agent system (4 specialized CrewAI agents with Gemini Pro & GPT-4)
 - **Phase 3**: Workflow orchestration (complete task coordination and execution)
-- **Phase 4**: Web interface (Streamlit application with interactive visualizations)
+- **Phase 4**: Command-line interface (CLI application with automated file discovery)
 - **Phase 5**: Advanced features (consensus mechanisms, batch processing, performance monitoring)
 
 **Current Metrics:**
-- **377 tests passing** with **98% coverage**
+- **351 tests passing** with **93.23% coverage**
 - **4 specialized agents** with dual LLM integration
-- **Complete web interface** with professional PDF reports
+- **Complete CLI interface** with automated file discovery and PDF generation
 - **Enterprise features** including advanced consensus and batch processing
 
 *See [docs/development/phase-reports/](docs/development/phase-reports/) for detailed completion documentation.*
@@ -152,7 +181,7 @@ Our development workflow ensures high-quality code for local use:
 
 #### **Quality Standards:**
 ```bash
-├── 98% Test Coverage (Currently: 98%)
+├── 90%+ Test Coverage (Currently: 93.23%)
 ├── <10 Second Test Execution
 ├── 100% Docstring Coverage
 ├── Zero Linting Warnings
@@ -170,6 +199,14 @@ Our development workflow ensures high-quality code for local use:
 
 ## 🧪 Testing
 
+### Quality Gates
+The project includes comprehensive GitHub Actions workflows that run on every PR:
+- ✅ **Type Checking**: mypy static type analysis
+- ✅ **Code Quality**: Black formatting and Flake8 linting
+- ✅ **Test Coverage**: 90%+ requirement with detailed reporting
+- ✅ **Security Scan**: bandit security vulnerability detection
+- ✅ **Performance**: Test execution time monitoring
+
 ### Run All Tests
 ```bash
 # Unit tests (fast)
@@ -183,8 +220,8 @@ python -m pytest tests/integration/ -v --llm
 ```
 
 ### Test Results
-- **377 tests passing**: 100% success rate
-- **98% coverage**: Comprehensive test coverage exceeding requirements
+- **351 tests passing**: 100% success rate
+- **93.23% coverage**: Comprehensive test coverage exceeding 90% requirement
 - **0 warnings**: Clean test output with enterprise-grade quality
 
 ## 📚 Documentation
@@ -233,7 +270,7 @@ mypy src/                            # Type checking
 pytest --cov=src --cov-report=term-missing
 
 # Launch development server
-streamlit run app/main.py
+python main.py --dry-run --verbose
 ```
 
 ## 🔐 Security & Performance

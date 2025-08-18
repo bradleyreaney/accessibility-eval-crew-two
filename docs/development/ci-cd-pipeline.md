@@ -130,7 +130,7 @@ python scripts/validate_quality_gates.py  # Full validation
 - **Error Handling**: No sensitive information leakage
 
 ### **Infrastructure Security** ✅ IMPLEMENTED  
-- **Trivy Scanning**: Container and dependency vulnerabilities
+
 - **SARIF Integration**: GitHub Security tab integration
 - **API Key Management**: Environment variable best practices
 - **HTTPS Enforcement**: All external API communications

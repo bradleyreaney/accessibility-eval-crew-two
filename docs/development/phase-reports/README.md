@@ -33,7 +33,7 @@ This directory contains completion reports for each development phase of the acc
   - Status: ✅ Complete
 
 ### Phase 4: User Interface
-- **[phase4-complete.md](./phase4-complete.md)** - Complete Streamlit web application
+- **[phase4-complete.md](./phase4-complete.md)** - Complete CLI application
   - Interactive dashboard implementation
   - Professional reporting capabilities
   - Status: ✅ Complete

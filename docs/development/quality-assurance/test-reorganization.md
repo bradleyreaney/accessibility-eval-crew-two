@@ -48,7 +48,7 @@ tests/unit/
 │   └── test_scoring_calculator.py      # Organized properly
 ├── utils/                           ✅ Matches src/utils/
 │   └── test_workflow_controller.py     # Consolidated tests
-└── test_streamlit_app.py           ✅ Interface test (no src equivalent)
+// ...existing code...
 ```
 
 ## Benefits

@@ -21,7 +21,7 @@ class TestLLMConfig:
 
         assert config.gemini_api_key == "test_gemini_key"
         assert config.openai_api_key == "test_openai_key"
-        assert config.gemini_model == "gemini-pro"
+        assert config.gemini_model == "gemini-1.5-pro"
         assert config.openai_model == "gpt-4"
         assert config.temperature == 0.1
 

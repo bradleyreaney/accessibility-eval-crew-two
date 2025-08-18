@@ -2,6 +2,10 @@
 
 Simple examples to get started with the accessibility evaluation system.
 
+# Basic Usage Examples
+
+Simple examples to get started with the accessibility evaluation system.
+
 ## 🎯 5-Minute Quick Start
 
 ### 1. Environment Setup
@@ -23,13 +27,13 @@ cp .env.example .env
 # Edit .env with your API keys
 ```
 
-### 2. Launch Web Interface
+
 ```bash
-# Start the Streamlit application
-streamlit run app/main.py
+
+
 ```
 
-The application will open at `http://localhost:8501` with a complete web interface.
+
 
 ## 🔧 Core Component Usage
 
@@ -178,10 +182,10 @@ csv_path = report_generator.export_to_csv(ranked_plans, "results.csv")
 print(f"CSV exported: {csv_path}")
 ```
 
-## 🌐 Web Interface Usage
+
 
 ### File Upload and Processing
-1. **Launch Application**: `streamlit run app/main.py`
+
 2. **Upload Files**: Use the sidebar to upload audit report and remediation plans
 3. **Monitor Progress**: Watch real-time evaluation progress
 4. **View Results**: Interactive dashboard with visualizations
@@ -251,5 +255,5 @@ python scripts/phase4_demo.py
 
 - **[Multi-Agent Workflow Examples](./multi-agent-workflow.md)**
 - **[Report Generation Examples](./report-generation.md)**
-- **[Streamlit UI Examples](./streamlit-components.md)**
+
 - **[API Reference](../api-reference/)**
