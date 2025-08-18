@@ -31,6 +31,7 @@ This system leverages **Large Language Models as Judges** to provide comprehensi
 - 🚀 **Advanced Consensus**: Multi-level conflict resolution with expert judge coordination
 - ⚡ **Batch Processing**: Parallel evaluation of multiple reports with progress tracking
 - 📈 **Performance Monitoring**: Real-time metrics, intelligent caching, and optimization recommendations
+- 🛡️ **LLM Error Resilience**: Graceful degradation when one LLM fails, partial results with NA reporting
 
 ## 🚀 Quick Start
 
