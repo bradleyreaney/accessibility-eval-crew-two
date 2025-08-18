@@ -8,6 +8,7 @@ and visual representations.
 References:
     - Phase 4 Plan: Report generation requirements
     - Master Plan: Output formats and documentation
+    - LLM Error Handling Enhancement Plan - Phase 3
 """
 
 import json
@@ -33,7 +34,13 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from ...models.evaluation_models import EvaluationInput
+from ...models.evaluation_models import (
+    EvaluationInput,
+    EvaluationResult,
+    EvaluationStatus,
+    PartialEvaluationSummary,
+    ResilienceInfo,
+)
 
 
 class EvaluationReportGenerator:
@@ -45,6 +52,8 @@ class EvaluationReportGenerator:
     - Detailed plan analysis
     - Score comparisons
     - Synthesis recommendations
+    - NA sections for unavailable evaluations
+    - LLM availability status
     """
 
     def __init__(self):
@@ -96,6 +105,13 @@ class EvaluationReportGenerator:
             story.extend(self._create_title_page(evaluation_results, report_type))
             story.append(PageBreak())
 
+            # LLM Availability Status (if resilience info is available)
+            if "resilience_info" in evaluation_results:
+                story.extend(
+                    self._create_availability_status_section(evaluation_results)
+                )
+                story.append(PageBreak())
+
             # Executive summary
             story.extend(self._create_executive_summary(evaluation_results))
             story.append(PageBreak())
@@ -140,9 +156,102 @@ class EvaluationReportGenerator:
             f"<b>Report Type:</b> {report_type.title()}",
         ]
 
+        # Add resilience information if available
+        if "resilience_info" in results:
+            resilience_info = results["resilience_info"]
+            if resilience_info.get("partial_evaluation"):
+                metadata.append("Evaluation Type: Partial (Some LLMs Unavailable)")
+                completion_pct = resilience_info.get("completion_percentage", 0)
+                metadata.append(f"Completion Rate: {completion_pct:.1f}%")
+            else:
+                metadata.append("Evaluation Type: Complete (All LLMs Available)")
+
         for item in metadata:
             content.append(Paragraph(item, self.styles["Normal"]))
             content.append(Spacer(1, 0.2 * inch))
+
+        return content
+
+    def _create_availability_status_section(self, results: Dict[str, Any]) -> List:
+        """Create LLM availability status section"""
+        content = []
+
+        # Section title
+        content.append(Paragraph("LLM Availability Status", self.styles["Heading2"]))
+        content.append(Spacer(1, 0.3 * inch))
+
+        resilience_info = results.get("resilience_info", {})
+        llm_availability = results.get("llm_availability", {})
+
+        # Availability summary
+        na_count = resilience_info.get("na_evaluations_count", 0)
+        completion_pct = resilience_info.get("completion_percentage", 100)
+
+        # Status summary
+        if resilience_info.get("partial_evaluation"):
+            status_text = f"""
+            <b>Evaluation Status:</b> Partial Evaluation Completed
+
+            This evaluation was completed with reduced LLM availability.
+            Some evaluations could not be performed due to LLM connectivity issues.
+
+            <b>Completion Rate:</b> {completion_pct:.1f}%
+            <b>NA Evaluations:</b> {na_count}
+            """
+        else:
+            status_text = f"""
+            <b>Evaluation Status:</b> Complete Evaluation
+
+            All LLMs were available during this evaluation, providing full coverage
+            of all planned assessments.
+
+            <b>Completion Rate:</b> {completion_pct:.1f}%
+            """
+
+        content.append(Paragraph(status_text, self.styles["Normal"]))
+        content.append(Spacer(1, 0.2 * inch))
+
+        # LLM status details
+        content.append(Paragraph("<b>LLM Status Details:</b>", self.styles["Normal"]))
+        content.append(Spacer(1, 0.1 * inch))
+
+        for llm_name, is_available in llm_availability.items():
+            status = "Available" if is_available else "Unavailable"
+            status_color = "green" if is_available else "red"
+            content.append(
+                Paragraph(
+                    f"• <b>{llm_name}:</b> <font color='{status_color}'>{status}</font>",
+                    self.styles["Normal"],
+                )
+            )
+
+        content.append(Spacer(1, 0.2 * inch))
+
+        # Troubleshooting guidance for partial evaluations
+        if resilience_info.get("partial_evaluation"):
+            troubleshooting_text = """
+            <b>Troubleshooting Guidance:</b>
+
+            If you see "NA" (Not Available) sections in this report, it indicates that
+            certain LLMs were unavailable during evaluation. This can happen due to:
+
+            • API connectivity issues
+            • Rate limiting or quota exceeded
+            • Temporary service outages
+            • Network connectivity problems
+
+            To resolve these issues:
+            1. Check your internet connection
+            2. Verify API keys are valid and have sufficient quota
+            3. Wait a few minutes and retry the evaluation
+            4. Contact support if issues persist
+
+            The evaluation results shown are based on available LLMs and provide
+            valuable insights despite the partial completion.
+            """
+            content.append(Paragraph(troubleshooting_text, self.styles["Normal"]))
+
+        content.append(Spacer(1, 0.3 * inch))
 
         return content
 
@@ -154,26 +263,55 @@ class EvaluationReportGenerator:
         content.append(Paragraph("Executive Summary", self.styles["Heading1"]))
         content.append(Spacer(1, 0.3 * inch))
 
-        # Summary content
         plans = results.get("plans", {})
+        resilience_info = results.get("resilience_info", {})
+
         if plans:
-            # Top scoring plan
-            top_plan = max(plans.items(), key=lambda x: x[1].get("overall_score", 0))
+            # Filter out NA evaluations for summary
+            completed_plans = {
+                name: data for name, data in plans.items() if data.get("status") != "NA"
+            }
 
-            summary_text = f"""
-            Based on comprehensive evaluation of {len(plans)} remediation plans,
-            <b>{top_plan[0]}</b> achieved the highest overall score of
-            <b>{top_plan[1].get('overall_score', 0)}/10</b>.
+            if completed_plans:
+                # Top scoring plan from completed evaluations
+                top_plan = max(
+                    completed_plans.items(), key=lambda x: x[1].get("overall_score", 0)
+                )
 
-            The evaluation assessed plans across four key criteria:
-            • Strategic Prioritization (40% weight)
-            • Technical Specificity (30% weight)
-            • Comprehensiveness (20% weight)
-            • Long-term Vision (10% weight)
-            """
+                summary_text = f"""
+                Based on comprehensive evaluation of {len(plans)} remediation plans,
+                <b>{top_plan[0]}</b> achieved the highest overall score of
+                <b>{top_plan[1].get('overall_score', 0)}/10</b> among completed evaluations.
 
-            content.append(Paragraph(summary_text, self.styles["Normal"]))
+                The evaluation assessed plans across four key criteria:
+                • Strategic Prioritization (40% weight)
+                • Technical Specificity (30% weight)
+                • Comprehensiveness (20% weight)
+                • Long-term Vision (10% weight)
+                """
 
+                # Add partial evaluation notice if applicable
+                if resilience_info.get("partial_evaluation"):
+                    completion_pct = resilience_info.get("completion_percentage", 0)
+                    na_count = resilience_info.get("na_evaluations_count", 0)
+                    summary_text += f"""
+
+                    <b>Note:</b> This evaluation was completed with {completion_pct:.1f}% coverage
+                    ({na_count} evaluations marked as NA due to LLM availability issues).
+                    Please refer to the LLM Availability Status section for details.
+                    """
+            else:
+                summary_text = """
+                <b>Evaluation Summary:</b>
+
+                All evaluations were marked as NA due to LLM availability issues.
+                Please check the LLM Availability Status section for troubleshooting guidance
+                and retry the evaluation when LLM services are available.
+                """
+        else:
+            summary_text = "No evaluation results available."
+
+        content.append(Paragraph(summary_text, self.styles["Normal"]))
         content.append(Spacer(1, 0.3 * inch))
 
         return content
@@ -192,6 +330,7 @@ class EvaluationReportGenerator:
             data = [
                 [
                     "Plan",
+                    "Status",
                     "Overall Score",
                     "Strategic",
                     "Technical",
@@ -201,44 +340,72 @@ class EvaluationReportGenerator:
             ]
 
             for plan_name, plan_data in plans.items():
-                criteria = plan_data.get("criteria_scores", {})
-                row = [
-                    plan_name,
-                    f"{plan_data.get('overall_score', 0)}/10",
-                    f"{criteria.get('strategic_prioritization', 0)}/10",
-                    f"{criteria.get('technical_specificity', 0)}/10",
-                    f"{criteria.get('comprehensiveness', 0)}/10",
-                    f"{criteria.get('long_term_vision', 0)}/10",
-                ]
+                status = plan_data.get("status", "completed")
+
+                if status == "NA":
+                    # NA evaluation row
+                    row = [
+                        plan_name,
+                        "NA",
+                        "N/A",
+                        "N/A",
+                        "N/A",
+                        "N/A",
+                        "N/A",
+                    ]
+                else:
+                    # Completed evaluation row
+                    criteria = plan_data.get("criteria_scores", {})
+                    row = [
+                        plan_name,
+                        "Completed",
+                        f"{plan_data.get('overall_score', 0)}/10",
+                        f"{criteria.get('strategic_prioritization', 0)}/10",
+                        f"{criteria.get('technical_specificity', 0)}/10",
+                        f"{criteria.get('comprehensiveness', 0)}/10",
+                        f"{criteria.get('long_term_vision', 0)}/10",
+                    ]
                 data.append(row)
 
             # Create table
             table = Table(
                 data,
                 colWidths=[
-                    1.5 * inch,
-                    1 * inch,
-                    1 * inch,
-                    1 * inch,
                     1.2 * inch,
+                    0.8 * inch,
                     1 * inch,
+                    0.9 * inch,
+                    0.9 * inch,
+                    1.1 * inch,
+                    0.9 * inch,
                 ],
             )
-            table.setStyle(
-                TableStyle(
-                    [
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                        ("FONTSIZE", (0, 0), (-1, 0), 10),
-                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
-                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                    ]
-                )
-            )
 
+            # Define table style with NA row highlighting
+            style_commands = [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+            ]
+
+            # Add background colors for different row types
+            for i, row in enumerate(data[1:], 1):  # Skip header row
+                if row[1] == "NA":
+                    # Highlight NA rows in light red
+                    style_commands.append(
+                        ("BACKGROUND", (0, i), (-1, i), colors.lightcoral)
+                    )
+                else:
+                    # Completed rows in light green
+                    style_commands.append(
+                        ("BACKGROUND", (0, i), (-1, i), colors.lightgreen)
+                    )
+
+            table.setStyle(TableStyle(style_commands))
             content.append(table)
 
         content.append(Spacer(1, 0.3 * inch))
@@ -259,36 +426,88 @@ class EvaluationReportGenerator:
             content.append(Paragraph(f"Plan: {plan_name}", self.styles["Heading2"]))
             content.append(Spacer(1, 0.2 * inch))
 
-            # Score
-            score_text = f"<b>Overall Score:</b> {plan_data.get('overall_score', 0)}/10"
-            content.append(Paragraph(score_text, self.styles["Normal"]))
-            content.append(Spacer(1, 0.1 * inch))
+            status = plan_data.get("status", "completed")
 
-            # Analysis
-            analysis = plan_data.get("analysis", "No detailed analysis available.")
-            content.append(
-                Paragraph(f"<b>Analysis:</b> {analysis}", self.styles["Normal"])
-            )
-            content.append(Spacer(1, 0.1 * inch))
-
-            # Strengths
-            strengths = plan_data.get("strengths", [])
-            if strengths:
-                content.append(Paragraph("<b>Strengths:</b>", self.styles["Normal"]))
-                for strength in strengths:
-                    content.append(Paragraph(f"• {strength}", self.styles["Normal"]))
-                content.append(Spacer(1, 0.1 * inch))
-
-            # Weaknesses
-            weaknesses = plan_data.get("weaknesses", [])
-            if weaknesses:
-                content.append(
-                    Paragraph("<b>Areas for Improvement:</b>", self.styles["Normal"])
+            if status == "NA":
+                # Create NA section
+                content.extend(self._create_na_evaluation_section(plan_name, plan_data))
+            else:
+                # Create completed evaluation section
+                content.extend(
+                    self._create_completed_evaluation_section(plan_name, plan_data)
                 )
-                for weakness in weaknesses:
-                    content.append(Paragraph(f"• {weakness}", self.styles["Normal"]))
 
             content.append(Spacer(1, 0.3 * inch))
+
+        return content
+
+    def _create_na_evaluation_section(
+        self, plan_name: str, plan_data: Dict[str, Any]
+    ) -> List:
+        """Create standardized NA section for PDF reports"""
+        content = []
+
+        # Status indicator
+        content.append(
+            Paragraph("<b>Status: Not Available (NA)</b>", self.styles["Normal"])
+        )
+        content.append(Spacer(1, 0.1 * inch))
+
+        # Reason for NA
+        na_reason = plan_data.get("na_reason", "LLM unavailable")
+        content.append(Paragraph(f"<b>Reason:</b> {na_reason}", self.styles["Normal"]))
+        content.append(Spacer(1, 0.1 * inch))
+
+        # LLM information
+        llm_used = plan_data.get("llm_used", "Unknown")
+        content.append(Paragraph(f"<b>LLM:</b> {llm_used}", self.styles["Normal"]))
+        content.append(Spacer(1, 0.1 * inch))
+
+        # Explanation
+        explanation_text = """
+        This evaluation could not be completed due to LLM availability issues.
+        The system attempted to evaluate this plan but encountered connectivity
+        or service problems with the required LLM.
+
+        Please refer to the LLM Availability Status section for troubleshooting
+        guidance and consider retrying the evaluation when LLM services are available.
+        """
+        content.append(Paragraph(explanation_text, self.styles["Normal"]))
+
+        return content
+
+    def _create_completed_evaluation_section(
+        self, plan_name: str, plan_data: Dict[str, Any]
+    ) -> List:
+        """Create section for completed evaluation results"""
+        content = []
+
+        # Score
+        score_text = f"<b>Overall Score:</b> {plan_data.get('overall_score', 0)}/10"
+        content.append(Paragraph(score_text, self.styles["Normal"]))
+        content.append(Spacer(1, 0.1 * inch))
+
+        # Analysis
+        analysis = plan_data.get("analysis", "No detailed analysis available.")
+        content.append(Paragraph(f"<b>Analysis:</b> {analysis}", self.styles["Normal"]))
+        content.append(Spacer(1, 0.1 * inch))
+
+        # Strengths
+        strengths = plan_data.get("strengths", [])
+        if strengths:
+            content.append(Paragraph("<b>Strengths:</b>", self.styles["Normal"]))
+            for strength in strengths:
+                content.append(Paragraph(f"• {strength}", self.styles["Normal"]))
+            content.append(Spacer(1, 0.1 * inch))
+
+        # Weaknesses
+        weaknesses = plan_data.get("weaknesses", [])
+        if weaknesses:
+            content.append(
+                Paragraph("<b>Areas for Improvement:</b>", self.styles["Normal"])
+            )
+            for weakness in weaknesses:
+                content.append(Paragraph(f"• {weakness}", self.styles["Normal"]))
 
         return content
 
@@ -377,10 +596,30 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
         data = []
 
         for plan_name, plan_data in plans.items():
-            criteria = plan_data.get("criteria_scores", {})
-            data.append(
-                {
+            status = plan_data.get("status", "completed")
+
+            if status == "NA":
+                # NA evaluation row
+                na_row = {
                     "Plan": plan_name,
+                    "Status": "Not Available",
+                    "Overall_Score": None,
+                    "Strategic_Prioritization": None,
+                    "Technical_Specificity": None,
+                    "Comprehensiveness": None,
+                    "Long_term_Vision": None,
+                    "Gemini_Score": None,
+                    "GPT4_Score": None,
+                    "NA_Reason": plan_data.get("na_reason", "LLM unavailable"),
+                    "LLM_Used": plan_data.get("llm_used", "Unknown"),
+                }
+                data.append(na_row)
+            else:
+                # Completed evaluation row
+                criteria = plan_data.get("criteria_scores", {})
+                completed_row = {
+                    "Plan": plan_name,
+                    "Status": "Completed",
                     "Overall_Score": plan_data.get("overall_score", 0),
                     "Strategic_Prioritization": criteria.get(
                         "strategic_prioritization", 0
@@ -390,14 +629,207 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
                     "Long_term_Vision": criteria.get("long_term_vision", 0),
                     "Gemini_Score": plan_data.get("gemini_score", 0),
                     "GPT4_Score": plan_data.get("gpt4_score", 0),
+                    "NA_Reason": "",
+                    "LLM_Used": plan_data.get("llm_used", "Multiple"),
                 }
-            )
+                data.append(completed_row)
 
         # Write CSV
         df = pd.DataFrame(data)
-        df.to_csv(output_path, index=False)
+        df.to_csv(output_path, index=False, na_rep="")
 
         return output_path
+
+    def create_completion_statistics(
+        self, evaluation_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Create completion statistics for evaluation results.
+
+        Args:
+            evaluation_results: Results from the evaluation process
+
+        Returns:
+            Dictionary containing completion statistics
+        """
+        plans = evaluation_results.get("plans", {})
+        resilience_info = evaluation_results.get("resilience_info", {})
+
+        # Count different statuses
+        total_plans = len(plans)
+        completed_count = 0
+        na_count = 0
+        failed_count = 0
+
+        for plan_data in plans.values():
+            status = plan_data.get("status", "completed")
+            if status == "completed":
+                completed_count += 1
+            elif status == "NA":
+                na_count += 1
+            elif status == "failed":
+                failed_count += 1
+
+        # Calculate completion percentage
+        completion_percentage = (
+            (completed_count / total_plans * 100) if total_plans > 0 else 0
+        )
+
+        # Get LLM availability info
+        available_llms = resilience_info.get("available_llms", [])
+        unavailable_llms = resilience_info.get("unavailable_llms", [])
+
+        statistics = {
+            "total_plans": total_plans,
+            "completed_evaluations": completed_count,
+            "na_evaluations": na_count,
+            "failed_evaluations": failed_count,
+            "completion_percentage": round(completion_percentage, 1),
+            "available_llms": available_llms,
+            "unavailable_llms": unavailable_llms,
+            "partial_evaluation": resilience_info.get("partial_evaluation", False),
+            "evaluation_timestamp": datetime.now().isoformat(),
+        }
+
+        return statistics
+
+    def generate_completion_summary_report(
+        self, evaluation_results: Dict[str, Any], output_path: Optional[Path] = None
+    ) -> Path:
+        """
+        Generate a completion summary report with statistics.
+
+        Args:
+            evaluation_results: Results from the evaluation process
+            output_path: Optional custom output path
+
+        Returns:
+            Path to the generated summary report
+        """
+        if output_path is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"completion_summary_{timestamp}.pdf"
+
+        try:
+            # Create PDF document
+            doc = SimpleDocTemplate(
+                str(output_path),
+                pagesize=letter,
+                rightMargin=72,
+                leftMargin=72,
+                topMargin=72,
+                bottomMargin=18,
+            )
+
+            story = []
+
+            # Title
+            title = Paragraph("Evaluation Completion Summary", self.styles["Title"])
+            story.append(title)
+            story.append(Spacer(1, 0.5 * inch))
+
+            # Get completion statistics
+            stats = self.create_completion_statistics(evaluation_results)
+
+            # Summary section
+            story.append(Paragraph("Completion Statistics", self.styles["Heading2"]))
+            story.append(Spacer(1, 0.3 * inch))
+
+            # Create statistics table
+            stats_data = [
+                ["Metric", "Value"],
+                ["Total Plans", str(stats["total_plans"])],
+                ["Completed Evaluations", str(stats["completed_evaluations"])],
+                ["NA Evaluations", str(stats["na_evaluations"])],
+                ["Failed Evaluations", str(stats["failed_evaluations"])],
+                ["Completion Rate", f"{stats['completion_percentage']}%"],
+            ]
+
+            stats_table = Table(stats_data, colWidths=[2 * inch, 1.5 * inch])
+            stats_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 12),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ]
+                )
+            )
+
+            story.append(stats_table)
+            story.append(Spacer(1, 0.3 * inch))
+
+            # LLM Status section
+            story.append(Paragraph("LLM Availability Status", self.styles["Heading2"]))
+            story.append(Spacer(1, 0.2 * inch))
+
+            available_llms = stats["available_llms"]
+            unavailable_llms = stats["unavailable_llms"]
+
+            if available_llms:
+                story.append(
+                    Paragraph(
+                        f"<b>Available LLMs:</b> {', '.join(available_llms)}",
+                        self.styles["Normal"],
+                    )
+                )
+            if unavailable_llms:
+                story.append(
+                    Paragraph(
+                        f"<b>Unavailable LLMs:</b> {', '.join(unavailable_llms)}",
+                        self.styles["Normal"],
+                    )
+                )
+
+            story.append(Spacer(1, 0.3 * inch))
+
+            # Evaluation type summary
+            if stats["partial_evaluation"]:
+                evaluation_type_text = f"""
+                <b>Evaluation Type:</b> Partial Evaluation
+
+                This evaluation was completed with reduced LLM availability.
+                Some evaluations could not be performed due to LLM connectivity issues.
+                The completion rate of {stats['completion_percentage']}% indicates that {stats['completed_evaluations']} out of {stats['total_plans']}
+                plans were successfully evaluated.
+                """
+            else:
+                evaluation_type_text = f"""
+                <b>Evaluation Type:</b> Complete Evaluation
+
+                All LLMs were available during this evaluation, providing full coverage
+                of all planned assessments. The completion rate of {stats['completion_percentage']}% indicates
+                successful evaluation of all {stats['total_plans']} plans.
+                """
+
+            story.append(Paragraph(evaluation_type_text, self.styles["Normal"]))
+
+            # Build PDF
+            doc.build(story)
+            return output_path
+
+        except Exception:
+            # Fallback to text report
+            fallback_path = output_path.with_suffix(".txt")
+            stats = self.create_completion_statistics(evaluation_results)
+
+            with open(fallback_path, "w") as f:
+                f.write("Evaluation Completion Summary\n")
+                f.write("============================\n\n")
+                f.write(f"Total Plans: {stats['total_plans']}\n")
+                f.write(f"Completed Evaluations: {stats['completed_evaluations']}\n")
+                f.write(f"NA Evaluations: {stats['na_evaluations']}\n")
+                f.write(f"Failed Evaluations: {stats['failed_evaluations']}\n")
+                f.write(f"Completion Rate: {stats['completion_percentage']}%\n")
+                f.write(f"Available LLMs: {', '.join(stats['available_llms'])}\n")
+                f.write(f"Unavailable LLMs: {', '.join(stats['unavailable_llms'])}\n")
+
+            return fallback_path
 
     def generate_json_export(
         self, evaluation_results: Dict[str, Any], output_path: Optional[Path] = None
@@ -416,7 +848,7 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_path = self.output_dir / f"evaluation_results_{timestamp}.json"
 
-        # Create export data with metadata
+        # Create export data with metadata and resilience information
         export_data = {
             "metadata": {
                 "exported_at": datetime.now().isoformat(),
@@ -426,6 +858,11 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             },
             "evaluation_results": evaluation_results,
         }
+
+        # Add completion statistics if resilience info is available
+        if "resilience_info" in evaluation_results:
+            completion_stats = self.create_completion_statistics(evaluation_results)
+            export_data["completion_statistics"] = completion_stats
 
         # Write JSON
         with open(output_path, "w", encoding="utf-8") as f:
@@ -545,6 +982,14 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             exec_summary_path = output_dir / f"execution_summary_{timestamp}.pdf"
             report_paths["execution_summary"] = self.create_execution_summary_report(
                 evaluation_results, metadata, exec_summary_path
+            )
+
+            # Generate completion summary (always included for resilience features)
+            completion_summary_path = output_dir / f"completion_summary_{timestamp}.pdf"
+            report_paths["completion_summary"] = (
+                self.generate_completion_summary_report(
+                    evaluation_results, completion_summary_path
+                )
             )
 
             # Generate requested report types
