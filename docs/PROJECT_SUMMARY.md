@@ -19,6 +19,7 @@ This project successfully implemented a sophisticated "LLM as a Judge" applicati
 - **Professional Interface**: Complete CLI application with automated file discovery
 - **Comprehensive Reporting**: PDF generation with executive, detailed, and comparative reports
 - **Quality Assurance**: 26 validated quality gates with automated testing pipeline
+- **LLM Error Resilience**: Graceful degradation with partial results and NA reporting
 
 ## 🏗️ Architecture Achievement
 
@@ -30,6 +31,7 @@ This project successfully implemented a sophisticated "LLM as a Judge" applicati
 - **Objective Decision Making**: Transform subjective plan selection into data-driven recommendations
 - **🚀 Enterprise-Scale Processing**: Batch evaluation with 75% conflict auto-resolution
 - **📊 Performance Optimization**: Real-time monitoring with 40-60% efficiency improvements
+- **🛡️ Error Resilience**: Graceful degradation with partial results when LLMs fail
 
 ### Technology Stack Implemented
 - **CrewAI**: Multi-agent orchestration and workflow management ✅

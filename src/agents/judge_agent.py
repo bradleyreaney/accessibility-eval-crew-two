@@ -11,6 +11,7 @@ from crewai import Agent, Task
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from ..config.llm_config import LLMManager
+from ..utils.llm_exceptions import LLMError, classify_llm_error
 from .tools.evaluation_framework import EvaluationFrameworkTool
 from .tools.gap_analyzer import GapAnalyzerTool
 from .tools.scoring_calculator import ScoringCalculatorTool
@@ -156,12 +157,20 @@ class PrimaryJudgeAgent:
 
         except Exception as e:
             logger.error(f"Primary judge evaluation failed for {plan_name}: {e}")
+
+            # Classify the error for better handling
+            llm_error = classify_llm_error(e, "Gemini Pro")
+
             return {
                 "plan_name": plan_name,
                 "evaluator": "Primary Judge (Gemini Pro)",
                 "evaluation_content": f"Evaluation failed: {str(e)}",
                 "success": False,
                 "error": str(e),
+                "error_type": llm_error.__class__.__name__,
+                "retryable": llm_error.retryable,
+                "llm_type": "gemini",
+                "status": "failed",
             }
 
     def create_evaluation_task(
@@ -340,12 +349,20 @@ class SecondaryJudgeAgent:
 
         except Exception as e:
             logger.error(f"Secondary judge evaluation failed for {plan_name}: {e}")
+
+            # Classify the error for better handling
+            llm_error = classify_llm_error(e, "GPT-4")
+
             return {
                 "plan_name": plan_name,
                 "evaluator": "Secondary Judge (GPT-4)",
                 "evaluation_content": f"Evaluation failed: {str(e)}",
                 "success": False,
                 "error": str(e),
+                "error_type": llm_error.__class__.__name__,
+                "retryable": llm_error.retryable,
+                "llm_type": "openai",
+                "status": "failed",
             }
 
     def get_agent_info(self) -> Dict[str, Any]:

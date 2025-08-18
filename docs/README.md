@@ -19,8 +19,9 @@ Welcome to the comprehensive documentation for our enterprise-ready AI-powered a
 ### 🤖 Technical Documentation
 - **[API Reference](api-reference/)** - Complete component documentation
   - **[Agents API](api-reference/agents-api.md)** - CrewAI agent implementations
-
   - **[Report Generator](api-reference/report-generator.md)** - PDF and export functionality
+- **[Features](features/)** - Comprehensive feature documentation ✅ **NEW**
+  - **[LLM Error Resilience](features/llm-error-resilience.md)** - Graceful degradation and partial results
 - **[Examples](examples/)** - Practical usage examples and code patterns
 - **[Architecture](architecture/)** - System design and data flow documentation
   - **[Data Flow](architecture/data-flow.md)** - Complete processing pipeline
