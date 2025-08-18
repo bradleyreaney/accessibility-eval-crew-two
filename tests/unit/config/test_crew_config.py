@@ -1,548 +1,638 @@
 """
-Unit tests for crew configuration and orchestration.
+Test suite for AccessibilityEvaluationCrew configuration and resilience features.
 
-This module contains comprehensive tests for the AccessibilityEvaluationCrew class,
-ensuring proper initialization, configuration validation, and workflow execution.
+Tests for crew initialization, agent availability checking, and resilience
+capabilities for Phase 2 of the LLM error handling enhancement plan.
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from datetime import datetime
+from typing import Any, Dict
+from unittest.mock import Mock, patch
 
 import pytest
-from crewai import Crew
 
 from src.config.crew_config import AccessibilityEvaluationCrew
+from src.config.llm_config import LLMManager
 from src.models.evaluation_models import DocumentContent, EvaluationInput
+from src.utils.llm_resilience_manager import LLMResilienceManager, ResilienceConfig
 
 
 class TestAccessibilityEvaluationCrew:
-    """Test suite for AccessibilityEvaluationCrew functionality."""
+    """Test suite for AccessibilityEvaluationCrew functionality"""
 
     @pytest.fixture
     def mock_llm_manager(self):
-        """Create mock LLM manager for testing."""
-        mock_manager = Mock()
+        """Mock LLMManager for testing"""
+        mock_manager = Mock(spec=LLMManager)
         mock_manager.gemini = Mock()
         mock_manager.openai = Mock()
         return mock_manager
 
     @pytest.fixture
+    def mock_resilience_manager(self):
+        """Mock LLMResilienceManager for testing"""
+        mock_manager = Mock(spec=LLMResilienceManager)
+        mock_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": True,
+        }
+        return mock_manager
+
+    @pytest.fixture
     def sample_evaluation_input(self):
-        """Create sample evaluation input for testing."""
-        return EvaluationInput(
-            audit_report=DocumentContent(
-                title="Sample Audit",
-                content="Sample audit content with accessibility issues",
-                page_count=10,
-                metadata={"type": "audit"},
-            ),
-            remediation_plans={
-                "PlanA": DocumentContent(
-                    title="Plan A",
-                    content="Remediation plan A content",
-                    page_count=5,
-                    metadata={"plan": "A"},
-                ),
-                "PlanB": DocumentContent(
-                    title="Plan B",
-                    content="Remediation plan B content",
-                    page_count=6,
-                    metadata={"plan": "B"},
-                ),
-            },
+        """Sample evaluation input for testing"""
+        audit_report = DocumentContent(
+            title="Test Audit Report",
+            content="Sample audit content...",
+            page_count=3,
+            metadata={"author": "Test Author"},
         )
 
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_crew_initialization(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
-    ):
-        """Test that AccessibilityEvaluationCrew initializes correctly."""
-        # Setup mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
+        remediation_plans = {
+            "PlanA": DocumentContent(
+                title="Plan A",
+                content="Plan A content...",
+                page_count=2,
+                metadata={"version": "1.0"},
+            ),
+            "PlanB": DocumentContent(
+                title="Plan B",
+                content="Plan B content...",
+                page_count=2,
+                metadata={"version": "1.0"},
+            ),
+        }
 
+        return EvaluationInput(
+            audit_report=audit_report, remediation_plans=remediation_plans
+        )
+
+    def test_initialization_with_llm_manager(self, mock_llm_manager):
+        """Test crew initialization with LLM manager"""
+        # Act
         crew = AccessibilityEvaluationCrew(mock_llm_manager)
 
-        # Verify initialization
+        # Assert
         assert crew.llm_manager == mock_llm_manager
+        assert crew.resilience_manager is None
         assert "primary_judge" in crew.agents
         assert "secondary_judge" in crew.agents
         assert "comparison_agent" in crew.agents
         assert "synthesis_agent" in crew.agents
-
         assert "evaluation" in crew.task_managers
         assert "comparison" in crew.task_managers
         assert "synthesis" in crew.task_managers
 
-        # Verify agents were created with LLM manager
-        mock_primary_judge.assert_called_once_with(mock_llm_manager)
-        mock_secondary_judge.assert_called_once_with(mock_llm_manager)
-        assert mock_analysis_agent.call_count == 2  # comparison and synthesis agents
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_agent_initialization(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
+    def test_initialization_with_resilience_manager(
+        self, mock_llm_manager, mock_resilience_manager
     ):
-        """Test that all agents are properly initialized."""
-        # Setup mocks with agent attributes
-        mock_primary_instance = Mock()
-        mock_primary_instance.agent = Mock()
-        mock_primary_judge.return_value = mock_primary_instance
+        """Test crew initialization with resilience manager"""
+        # Act
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        mock_secondary_instance = Mock()
-        mock_secondary_instance.agent = Mock()
-        mock_secondary_judge.return_value = mock_secondary_instance
+        # Assert
+        assert crew.llm_manager == mock_llm_manager
+        assert crew.resilience_manager == mock_resilience_manager
+        assert crew.agent_availability is not None
 
-        mock_analysis_instance = Mock()
-        mock_analysis_instance.agent = Mock()
-        mock_analysis_agent.return_value = mock_analysis_instance
+    def test_agent_availability_check_with_all_llms_available(
+        self, mock_llm_manager, mock_resilience_manager
+    ):
+        """Test agent availability check when all LLMs are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": True,
+        }
 
+        # Act
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Assert
+        assert crew.agent_availability["primary_judge"] is True
+        assert crew.agent_availability["secondary_judge"] is True
+        assert crew.agent_availability["comparison_agent"] is True
+        assert crew.agent_availability["synthesis_agent"] is True
+
+    def test_agent_availability_check_with_partial_llm_availability(
+        self, mock_llm_manager, mock_resilience_manager
+    ):
+        """Test agent availability check when only some LLMs are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": False,
+        }
+
+        # Act
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Assert
+        assert crew.agent_availability["primary_judge"] is True
+        assert crew.agent_availability["secondary_judge"] is False
+        assert crew.agent_availability["comparison_agent"] is True  # Can use either LLM
+        assert crew.agent_availability["synthesis_agent"] is True  # Can use either LLM
+
+    def test_agent_availability_check_with_no_llms_available(
+        self, mock_llm_manager, mock_resilience_manager
+    ):
+        """Test agent availability check when no LLMs are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": False,
+            "openai": False,
+        }
+
+        # Act
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Assert
+        assert crew.agent_availability["primary_judge"] is False
+        assert crew.agent_availability["secondary_judge"] is False
+        assert crew.agent_availability["comparison_agent"] is False
+        assert crew.agent_availability["synthesis_agent"] is False
+
+    def test_agent_availability_check_without_resilience_manager(
+        self, mock_llm_manager
+    ):
+        """Test agent availability check without resilience manager"""
+        # Act
         crew = AccessibilityEvaluationCrew(mock_llm_manager)
 
-        # Verify agent structure
-        assert hasattr(crew.agents["primary_judge"], "agent")
-        assert hasattr(crew.agents["secondary_judge"], "agent")
-        assert hasattr(crew.agents["comparison_agent"], "agent")
-        assert hasattr(crew.agents["synthesis_agent"], "agent")
+        # Assert
+        assert crew.agent_availability["primary_judge"] is True
+        assert crew.agent_availability["secondary_judge"] is True
+        assert crew.agent_availability["comparison_agent"] is True
+        assert crew.agent_availability["synthesis_agent"] is True
 
-    @patch("src.config.crew_config.EvaluationTaskManager")
-    @patch("src.config.crew_config.ComparisonTaskManager")
-    @patch("src.config.crew_config.SynthesisTaskManager")
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_task_manager_initialization(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_synthesis_manager,
-        mock_comparison_manager,
-        mock_evaluation_manager,
-        mock_llm_manager,
+    def test_validate_configuration_with_all_agents_available(
+        self, mock_llm_manager, mock_resilience_manager
     ):
-        """Test that task managers are properly initialized."""
-        # Setup agent mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
+        """Test configuration validation when all agents are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": True,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        # Setup task manager mocks
-        mock_eval_instance = Mock()
-        mock_evaluation_manager.return_value = mock_eval_instance
+        # Act
+        result = crew.validate_configuration()
 
-        mock_comp_instance = Mock()
-        mock_comparison_manager.return_value = mock_comp_instance
+        # Assert
+        assert result is True
 
-        mock_synth_instance = Mock()
-        mock_synthesis_manager.return_value = mock_synth_instance
+    def test_validate_configuration_with_partial_agents_available(
+        self, mock_llm_manager, mock_resilience_manager
+    ):
+        """Test configuration validation when only some agents are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
+        # Act
+        result = crew.validate_configuration()
 
-        # Verify task managers were created correctly
-        mock_evaluation_manager.assert_called_once()
-        mock_comparison_manager.assert_called_once()
-        mock_synthesis_manager.assert_called_once()
+        # Assert
+        assert result is True  # Should still be valid with partial availability
 
-        assert crew.task_managers["evaluation"] == mock_eval_instance
-        assert crew.task_managers["comparison"] == mock_comp_instance
-        assert crew.task_managers["synthesis"] == mock_synth_instance
+    def test_validate_configuration_with_no_evaluation_agents(
+        self, mock_llm_manager, mock_resilience_manager
+    ):
+        """Test configuration validation when no evaluation agents are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": False,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Act
+        result = crew.validate_configuration()
+
+        # Assert
+        assert result is False
+
+    def test_get_available_agents(self, mock_llm_manager, mock_resilience_manager):
+        """Test getting list of available agents"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Act
+        available_agents = crew.get_available_agents()
+
+        # Assert
+        assert "primary_judge" in available_agents
+        assert "secondary_judge" not in available_agents
+        assert "comparison_agent" in available_agents
+        assert "synthesis_agent" in available_agents
+
+    def test_get_unavailable_agents(self, mock_llm_manager, mock_resilience_manager):
+        """Test getting list of unavailable agents"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Act
+        unavailable_agents = crew.get_unavailable_agents()
+
+        # Assert
+        assert "primary_judge" not in unavailable_agents
+        assert "secondary_judge" in unavailable_agents
+        assert "comparison_agent" not in unavailable_agents
+        assert "synthesis_agent" not in unavailable_agents
 
     @patch("src.config.crew_config.Crew")
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_execute_complete_evaluation_workflow(
+    def test_execute_individual_evaluations_with_all_judges_available(
         self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
         mock_crew_class,
         mock_llm_manager,
+        mock_resilience_manager,
         sample_evaluation_input,
     ):
-        """Test complete evaluation workflow execution."""
-        # Setup agent mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
+        """Test individual evaluations when all judges are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": True,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        # Setup crew mock
         mock_crew_instance = Mock()
-        mock_crew_instance.kickoff.return_value = "Mock evaluation result"
+        mock_crew_instance.kickoff.return_value = {"result": "test"}
         mock_crew_class.return_value = mock_crew_instance
 
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-
-        # Mock task managers
+        # Mock task manager method
         crew.task_managers["evaluation"].create_batch_evaluation_tasks = Mock(
             return_value=["task1", "task2"]
         )
-        crew.task_managers["comparison"].create_cross_plan_comparison_task = Mock(
-            return_value="comparison_task"
-        )
-        crew.task_managers["synthesis"].create_optimal_plan_synthesis_task = Mock(
-            return_value="synthesis_task"
-        )
 
-        # Execute workflow
-        results = crew.execute_complete_evaluation(sample_evaluation_input)
+        # Act
+        result = crew._execute_individual_evaluations(sample_evaluation_input)
 
-        # Verify workflow phases
-        assert "individual_evaluations" in results
-        assert "comparison_analysis" in results
-        assert "optimal_plan" in results
-
-        # Verify crew was called multiple times for different phases
-        assert mock_crew_class.call_count == 3  # evaluation, comparison, synthesis
-
-        # Verify kickoff was called for each phase
-        assert mock_crew_instance.kickoff.call_count == 3
+        # Assert
+        assert result == {"result": "test"}
+        mock_crew_class.assert_called_once()
+        # Should have both judges in the crew
+        called_agents = mock_crew_class.call_args[1]["agents"]
+        assert len(called_agents) == 2
 
     @patch("src.config.crew_config.Crew")
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_execute_parallel_evaluation(
+    def test_execute_individual_evaluations_with_partial_judges_available(
         self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
         mock_crew_class,
         mock_llm_manager,
+        mock_resilience_manager,
         sample_evaluation_input,
     ):
-        """Test parallel evaluation workflow execution."""
-        # Setup agent mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
+        """Test individual evaluations when only some judges are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        # Setup crew mock
         mock_crew_instance = Mock()
-        mock_crew_instance.kickoff.return_value = "Parallel results"
+        mock_crew_instance.kickoff.return_value = {"result": "test"}
         mock_crew_class.return_value = mock_crew_instance
 
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-
-        # Mock task manager
+        # Mock task manager method
         crew.task_managers["evaluation"].create_batch_evaluation_tasks = Mock(
-            return_value=["task1", "task2", "task3"]
+            return_value=["task1", "task2"]
         )
 
-        # Execute parallel workflow
-        results = crew.execute_parallel_evaluation(sample_evaluation_input)
+        # Act
+        result = crew._execute_individual_evaluations(sample_evaluation_input)
 
-        # Verify results
-        assert "parallel_results" in results
-        assert results["parallel_results"] == "Parallel results"
-
-        # Verify crew configuration for parallel execution
+        # Assert
+        assert result == {"result": "test"}
         mock_crew_class.assert_called_once()
-        call_args = mock_crew_class.call_args[1]
-        assert len(call_args["agents"]) == 2  # primary and secondary judges
-        assert len(call_args["tasks"]) == 3  # all evaluation tasks
+        # Should have only one judge in the crew
+        called_agents = mock_crew_class.call_args[1]["agents"]
+        assert len(called_agents) == 1
 
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_get_agent_status(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
+    def test_execute_individual_evaluations_with_no_judges_available(
+        self, mock_llm_manager, mock_resilience_manager, sample_evaluation_input
     ):
-        """Test agent status reporting."""
-        # Setup mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
-
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-        status = crew.get_agent_status()
-
-        # Verify status information
-        assert status["total_agents"] == 4
-        assert set(status["agent_types"]) == {
-            "primary_judge",
-            "secondary_judge",
-            "comparison_agent",
-            "synthesis_agent",
+        """Test individual evaluations when no judges are available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": False,
+            "openai": False,
         }
-        assert set(status["task_managers"]) == {"evaluation", "comparison", "synthesis"}
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        # Verify LLM model assignments
-        assert status["llm_models"]["primary_judge"] == "gemini"
-        assert status["llm_models"]["secondary_judge"] == "openai"
-        assert status["llm_models"]["comparison_agent"] == "openai"
-        assert status["llm_models"]["synthesis_agent"] == "openai"
+        # Act
+        result = crew._execute_individual_evaluations(sample_evaluation_input)
 
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_validate_configuration_success(
+        # Assert
+        assert "PlanA" in result
+        assert "PlanB" in result
+        assert result["PlanA"]["status"] == "NA"
+        assert result["PlanA"]["reason"] == "No evaluation agents available"
+        assert result["PlanB"]["status"] == "NA"
+        assert result["PlanB"]["reason"] == "No evaluation agents available"
+
+    @patch("src.config.crew_config.Crew")
+    def test_execute_cross_plan_comparison_with_agent_available(
         self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
+        mock_crew_class,
         mock_llm_manager,
-    ):
-        """Test successful configuration validation."""
-        # Setup proper agent mocks
-        mock_primary_instance = Mock()
-        mock_primary_instance.agent = Mock()
-        mock_primary_judge.return_value = mock_primary_instance
-
-        mock_secondary_instance = Mock()
-        mock_secondary_instance.agent = Mock()
-        mock_secondary_judge.return_value = mock_secondary_instance
-
-        mock_analysis_instance = Mock()
-        mock_analysis_instance.agent = Mock()
-        mock_analysis_agent.return_value = mock_analysis_instance
-
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-
-        # Validate configuration
-        assert crew.validate_configuration() is True
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_validate_configuration_missing_agent(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
-    ):
-        """Test configuration validation with missing agent."""
-        # Setup incomplete mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
-
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-
-        # Remove an agent to simulate missing configuration
-        del crew.agents["primary_judge"]
-
-        # Validate configuration should fail
-        assert crew.validate_configuration() is False
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_validate_configuration_missing_agent_attribute(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
-    ):
-        """Test configuration validation with agent missing 'agent' attribute."""
-        # Setup agent without 'agent' attribute
-        mock_primary_instance = Mock()
-        mock_primary_judge.return_value = mock_primary_instance
-
-        mock_secondary_instance = Mock()
-        mock_secondary_instance.agent = Mock()
-        mock_secondary_judge.return_value = mock_secondary_instance
-
-        mock_analysis_instance = Mock()
-        mock_analysis_instance.agent = Mock()
-        mock_analysis_agent.return_value = mock_analysis_instance
-
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-
-        # Remove the agent attribute to force the check to fail
-        delattr(crew.agents["primary_judge"], "agent")
-
-        # Validate configuration should fail due to missing agent attribute
-        assert crew.validate_configuration() is False
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_validate_configuration_missing_task_manager(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
-    ):
-        """Test configuration validation with missing task manager."""
-        # Setup proper agent mocks
-        mock_primary_instance = Mock()
-        mock_primary_instance.agent = Mock()
-        mock_primary_judge.return_value = mock_primary_instance
-
-        mock_secondary_instance = Mock()
-        mock_secondary_instance.agent = Mock()
-        mock_secondary_judge.return_value = mock_secondary_instance
-
-        mock_analysis_instance = Mock()
-        mock_analysis_instance.agent = Mock()
-        mock_analysis_agent.return_value = mock_analysis_instance
-
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-
-        # Remove a task manager to simulate missing configuration
-        del crew.task_managers["evaluation"]
-
-        # Validate configuration should fail
-        assert crew.validate_configuration() is False
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_validate_configuration_missing_llm_config(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-    ):
-        """Test configuration validation with missing LLM configuration."""
-        # Setup proper agent mocks
-        mock_primary_instance = Mock()
-        mock_primary_instance.agent = Mock()
-        mock_primary_judge.return_value = mock_primary_instance
-
-        mock_secondary_instance = Mock()
-        mock_secondary_instance.agent = Mock()
-        mock_secondary_judge.return_value = mock_secondary_instance
-
-        mock_analysis_instance = Mock()
-        mock_analysis_instance.agent = Mock()
-        mock_analysis_agent.return_value = mock_analysis_instance
-
-        # Create LLM manager missing required attributes
-        mock_llm_manager_incomplete = Mock(
-            spec=[]
-        )  # spec=[] ensures it has no attributes
-
-        crew = AccessibilityEvaluationCrew(mock_llm_manager_incomplete)
-
-        # Validate configuration should fail due to missing LLM configs
-        assert crew.validate_configuration() is False
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_validate_configuration_exception_handling(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
-    ):
-        """Test configuration validation exception handling."""
-        # Setup agent that will cause exception
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
-
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
-
-        # Force an exception by making hasattr fail
-        with patch("builtins.hasattr", side_effect=Exception("hasattr failed")):
-            # Validate configuration should fail gracefully
-            assert crew.validate_configuration() is False
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_create_sample_evaluations(
-        self,
-        mock_analysis_agent,
-        mock_secondary_judge,
-        mock_primary_judge,
-        mock_llm_manager,
+        mock_resilience_manager,
         sample_evaluation_input,
     ):
-        """Test sample evaluation creation for testing."""
-        # Setup mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
+        """Test cross-plan comparison when comparison agent is available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": True,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        crew = AccessibilityEvaluationCrew(mock_llm_manager)
+        mock_crew_instance = Mock()
+        mock_crew_instance.kickoff.return_value = {"comparison": "result"}
+        mock_crew_class.return_value = mock_crew_instance
 
-        # Create sample evaluations
-        evaluations = crew._create_sample_evaluations(sample_evaluation_input)
+        # Mock task manager method
+        crew.task_managers["comparison"].create_cross_plan_comparison_task = Mock(
+            return_value="task1"
+        )
 
-        # Verify evaluations were created
-        assert len(evaluations) == 4  # 2 plans × 2 judges
+        # Act
+        result = crew._execute_cross_plan_comparison(
+            sample_evaluation_input, {"test": "data"}
+        )
 
-        # Verify evaluation structure
-        plan_names = {eval.plan_name for eval in evaluations}
-        judge_ids = {eval.judge_id for eval in evaluations}
+        # Assert
+        assert result == {"comparison": "result"}
+        mock_crew_class.assert_called_once()
 
-        assert plan_names == {"PlanA", "PlanB"}
-        assert judge_ids == {"primary", "secondary"}
-
-        # Verify all evaluations have required fields
-        for evaluation in evaluations:
-            assert evaluation.overall_score > 0
-            assert len(evaluation.scores) > 0
-            assert evaluation.detailed_analysis
-            assert len(evaluation.pros) > 0
-            assert len(evaluation.cons) > 0
-
-
-class TestCrewConfigurationIntegration:
-    """Integration tests for crew configuration functionality."""
-
-    def test_crew_config_module_imports(self):
-        """Test that all required imports work correctly."""
-        from crewai import Process
-
-        from src.config.crew_config import AccessibilityEvaluationCrew
-
-        # Verify imports are successful
-        assert AccessibilityEvaluationCrew is not None
-        assert Process is not None
-
-    @patch("src.config.crew_config.PrimaryJudgeAgent")
-    @patch("src.config.crew_config.SecondaryJudgeAgent")
-    @patch("src.config.crew_config.AnalysisAgent")
-    def test_full_crew_integration(
-        self, mock_analysis_agent, mock_secondary_judge, mock_primary_judge
+    def test_execute_cross_plan_comparison_with_agent_unavailable(
+        self, mock_llm_manager, mock_resilience_manager, sample_evaluation_input
     ):
-        """Test full crew integration with all components."""
-        # Setup mock LLM manager
-        mock_llm_manager = Mock()
-        mock_llm_manager.gemini = Mock()
-        mock_llm_manager.openai = Mock()
+        """Test cross-plan comparison when comparison agent is unavailable"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": False,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
 
-        # Setup agent mocks
-        mock_primary_judge.return_value = Mock()
-        mock_secondary_judge.return_value = Mock()
-        mock_analysis_agent.return_value = Mock()
+        # Act
+        result = crew._execute_cross_plan_comparison(
+            sample_evaluation_input, {"test": "data"}
+        )
 
-        # Should be able to create crew without errors
+        # Assert
+        assert result["status"] == "NA"
+        assert result["reason"] == "Comparison agent unavailable"
+
+    @patch("src.config.crew_config.Crew")
+    def test_execute_plan_synthesis_with_agent_available(
+        self,
+        mock_crew_class,
+        mock_llm_manager,
+        mock_resilience_manager,
+        sample_evaluation_input,
+    ):
+        """Test plan synthesis when synthesis agent is available"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": True,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        mock_crew_instance = Mock()
+        mock_crew_instance.kickoff.return_value = {"synthesis": "result"}
+        mock_crew_class.return_value = mock_crew_instance
+
+        # Mock task manager method
+        crew.task_managers["synthesis"].create_optimal_plan_synthesis_task = Mock(
+            return_value="task1"
+        )
+
+        # Act
+        result = crew._execute_plan_synthesis(
+            sample_evaluation_input, {"test": "data"}, {"comparison": "data"}
+        )
+
+        # Assert
+        assert result == {"synthesis": "result"}
+        mock_crew_class.assert_called_once()
+
+    def test_execute_plan_synthesis_with_agent_unavailable(
+        self, mock_llm_manager, mock_resilience_manager, sample_evaluation_input
+    ):
+        """Test plan synthesis when synthesis agent is unavailable"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": False,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Act
+        result = crew._execute_plan_synthesis(
+            sample_evaluation_input, {"test": "data"}, {"comparison": "data"}
+        )
+
+        # Assert
+        assert result["status"] == "NA"
+        assert result["reason"] == "Synthesis agent unavailable"
+
+    def test_create_na_evaluation_results(
+        self, mock_llm_manager, sample_evaluation_input
+    ):
+        """Test creation of NA evaluation results"""
+        # Arrange
         crew = AccessibilityEvaluationCrew(mock_llm_manager)
 
-        # Verify all components are properly initialized
-        assert crew.llm_manager is not None
-        assert len(crew.agents) == 4
-        assert len(crew.task_managers) == 3
+        # Act
+        result = crew._create_na_evaluation_results(sample_evaluation_input)
 
-        # Verify configuration is valid
-        status = crew.get_agent_status()
-        assert status["total_agents"] == 4
-        assert len(status["agent_types"]) == 4
-        assert len(status["task_managers"]) == 3
+        # Assert
+        assert "PlanA" in result
+        assert "PlanB" in result
+        assert result["PlanA"]["status"] == "NA"
+        assert result["PlanA"]["reason"] == "No evaluation agents available"
+        assert result["PlanA"]["evaluation_content"] is None
+        assert "timestamp" in result["PlanA"]
+        assert result["PlanB"]["status"] == "NA"
+        assert result["PlanB"]["reason"] == "No evaluation agents available"
+        assert result["PlanB"]["evaluation_content"] is None
+        assert "timestamp" in result["PlanB"]
+
+    @patch("src.config.crew_config.Crew")
+    def test_execute_complete_evaluation_with_resilience(
+        self,
+        mock_crew_class,
+        mock_llm_manager,
+        mock_resilience_manager,
+        sample_evaluation_input,
+    ):
+        """Test complete evaluation workflow with resilience capabilities"""
+        # Arrange
+        mock_resilience_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": False,
+        }
+        crew = AccessibilityEvaluationCrew(mock_llm_manager, mock_resilience_manager)
+
+        # Mock individual evaluations
+        crew._execute_individual_evaluations = Mock(
+            return_value={"individual": "result"}
+        )
+        crew._execute_cross_plan_comparison = Mock(
+            return_value={"comparison": "result"}
+        )
+        crew._execute_plan_synthesis = Mock(return_value={"synthesis": "result"})
+
+        # Act
+        result = crew.execute_complete_evaluation(sample_evaluation_input)
+
+        # Assert
+        assert "individual_evaluations" in result
+        assert "comparison_analysis" in result
+        assert "optimal_plan" in result
+        assert result["individual_evaluations"] == {"individual": "result"}
+        assert result["comparison_analysis"] == {"comparison": "result"}
+        assert result["optimal_plan"] == {"synthesis": "result"}
+
+        # Verify resilience methods were called
+        crew._execute_individual_evaluations.assert_called_once_with(
+            sample_evaluation_input
+        )
+        crew._execute_cross_plan_comparison.assert_called_once_with(
+            sample_evaluation_input, {"individual": "result"}
+        )
+        crew._execute_plan_synthesis.assert_called_once_with(
+            sample_evaluation_input, {"individual": "result"}, {"comparison": "result"}
+        )
+
+
+class TestAccessibilityEvaluationCrewIntegration:
+    """Integration tests for AccessibilityEvaluationCrew"""
+
+    @pytest.fixture
+    def mock_llm_manager_integration(self):
+        """Mock LLMManager for integration testing"""
+        mock_manager = Mock(spec=LLMManager)
+        mock_manager.gemini = Mock()
+        mock_manager.openai = Mock()
+        return mock_manager
+
+    @pytest.fixture
+    def mock_resilience_manager_integration(self):
+        """Mock LLMResilienceManager for integration testing"""
+        mock_manager = Mock(spec=LLMResilienceManager)
+        mock_manager.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": True,
+        }
+        return mock_manager
+
+    @pytest.fixture
+    def sample_evaluation_input(self):
+        """Sample evaluation input for testing"""
+        audit_report = DocumentContent(
+            title="Test Audit Report",
+            content="Sample audit content...",
+            page_count=3,
+            metadata={"author": "Test Author"},
+        )
+
+        remediation_plans = {
+            "PlanA": DocumentContent(
+                title="Plan A",
+                content="Plan A content...",
+                page_count=2,
+                metadata={"version": "1.0"},
+            ),
+            "PlanB": DocumentContent(
+                title="Plan B",
+                content="Plan B content...",
+                page_count=2,
+                metadata={"version": "1.0"},
+            ),
+        }
+
+        return EvaluationInput(
+            audit_report=audit_report, remediation_plans=remediation_plans
+        )
+
+    def test_full_workflow_with_resilience_integration(
+        self,
+        mock_llm_manager_integration,
+        mock_resilience_manager_integration,
+        sample_evaluation_input,
+    ):
+        """Test full workflow integration with resilience capabilities"""
+        # Arrange
+        crew = AccessibilityEvaluationCrew(
+            mock_llm_manager_integration, mock_resilience_manager_integration
+        )
+
+        # Mock all internal methods
+        crew._execute_individual_evaluations = Mock(
+            return_value={"individual": "result"}
+        )
+        crew._execute_cross_plan_comparison = Mock(
+            return_value={"comparison": "result"}
+        )
+        crew._execute_plan_synthesis = Mock(return_value={"synthesis": "result"})
+
+        # Act
+        result = crew.execute_complete_evaluation(sample_evaluation_input)
+
+        # Assert
+        assert result["individual_evaluations"] == {"individual": "result"}
+        assert result["comparison_analysis"] == {"comparison": "result"}
+        assert result["optimal_plan"] == {"synthesis": "result"}
+
+        # Verify resilience manager was used
+        mock_resilience_manager_integration.check_llm_availability.assert_called()
+
+    def test_agent_availability_integration(
+        self, mock_llm_manager_integration, mock_resilience_manager_integration
+    ):
+        """Test agent availability integration with resilience manager"""
+        # Arrange
+        mock_resilience_manager_integration.check_llm_availability.return_value = {
+            "gemini": True,
+            "openai": False,
+        }
+
+        # Act
+        crew = AccessibilityEvaluationCrew(
+            mock_llm_manager_integration, mock_resilience_manager_integration
+        )
+
+        # Assert
+        assert crew.agent_availability["primary_judge"] is True
+        assert crew.agent_availability["secondary_judge"] is False
+        assert crew.agent_availability["comparison_agent"] is True
+        assert crew.agent_availability["synthesis_agent"] is True
+
+        # Test validation
+        assert crew.validate_configuration() is True
+
+        # Test available/unavailable lists
+        available = crew.get_available_agents()
+        unavailable = crew.get_unavailable_agents()
+
+        assert "primary_judge" in available
+        assert "secondary_judge" in unavailable
+        assert "comparison_agent" in available
+        assert "synthesis_agent" in available

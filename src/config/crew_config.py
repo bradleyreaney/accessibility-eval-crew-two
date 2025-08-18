@@ -3,13 +3,16 @@ CrewAI configuration and orchestration for the evaluation system.
 
 This module provides the main crew configuration that coordinates all agents
 and tasks for the complete end-to-end accessibility evaluation workflow.
+Enhanced with LLM resilience capabilities for graceful degradation.
 
 References:
     - Master Plan: Crew Configuration requirements
     - Phase 2: All agent implementations
     - Phase 3: Workflow orchestration
+    - LLM Error Handling Enhancement Plan - Phase 2
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from crewai import Crew, Process
@@ -21,6 +24,7 @@ from ..models.evaluation_models import EvaluationInput, PlanEvaluation
 from ..tasks.comparison_tasks import ComparisonTaskManager
 from ..tasks.evaluation_tasks import EvaluationTaskManager
 from ..tasks.synthesis_tasks import SynthesisTaskManager
+from ..utils.llm_resilience_manager import LLMResilienceManager
 
 
 class AccessibilityEvaluationCrew:
@@ -30,23 +34,33 @@ class AccessibilityEvaluationCrew:
     This crew coordinates all agents and tasks for end-to-end plan evaluation,
     from individual plan assessments through cross-plan comparison to final
     synthesis of the optimal remediation plan.
+    Enhanced with LLM resilience capabilities for graceful degradation.
 
     Attributes:
         llm_manager: LLM configuration and management
+        resilience_manager: Optional LLM resilience manager for failure handling
         agents: Dictionary of initialized agent instances
         task_managers: Dictionary of task manager instances
+        agent_availability: Dictionary tracking agent availability status
     """
 
-    def __init__(self, llm_manager: LLMManager):
+    def __init__(
+        self,
+        llm_manager: LLMManager,
+        resilience_manager: Optional[LLMResilienceManager] = None,
+    ):
         """
         Initialize the evaluation crew with all necessary components.
 
         Args:
             llm_manager: Configured LLM manager with access to required models
+            resilience_manager: Optional LLM resilience manager for enhanced error handling
         """
         self.llm_manager = llm_manager
+        self.resilience_manager = resilience_manager
         self.agents = self._initialize_agents()
         self.task_managers = self._initialize_task_managers()
+        self.agent_availability = self._check_agent_availability()
 
     def _initialize_agents(self) -> Dict[str, Any]:
         """
@@ -77,11 +91,112 @@ class AccessibilityEvaluationCrew:
             "synthesis": SynthesisTaskManager(self.agents["synthesis_agent"]),
         }
 
+    def _check_agent_availability(self) -> Dict[str, bool]:
+        """
+        Check availability of all agents based on LLM status.
+
+        Returns:
+            Dictionary mapping agent names to availability status
+        """
+        availability = {}
+
+        if self.resilience_manager:
+            llm_availability = self.resilience_manager.check_llm_availability()
+
+            # Check primary judge (uses Gemini)
+            availability["primary_judge"] = llm_availability.get("gemini", True)
+
+            # Check secondary judge (uses OpenAI)
+            availability["secondary_judge"] = llm_availability.get("openai", True)
+
+            # Check analysis agents (can use either LLM)
+            availability["comparison_agent"] = any(llm_availability.values())
+            availability["synthesis_agent"] = any(llm_availability.values())
+        else:
+            # If no resilience manager, assume all agents are available
+            availability = {
+                "primary_judge": True,
+                "secondary_judge": True,
+                "comparison_agent": True,
+                "synthesis_agent": True,
+            }
+
+        return availability
+
+    def validate_configuration(self) -> bool:
+        """
+        Validate crew configuration and agent availability.
+
+        Returns:
+            True if configuration is valid, False otherwise
+        """
+        try:
+            # Check if we have at least one evaluation agent available
+            evaluation_agents_available = (
+                self.agent_availability["primary_judge"]
+                or self.agent_availability["secondary_judge"]
+            )
+
+            if not evaluation_agents_available:
+                print("❌ Crew validation failed: No evaluation agents available")
+                return False
+
+            # Check if we have at least one analysis agent available
+            analysis_agents_available = (
+                self.agent_availability["comparison_agent"]
+                or self.agent_availability["synthesis_agent"]
+            )
+
+            if not analysis_agents_available:
+                print("❌ Crew validation failed: No analysis agents available")
+                return False
+
+            # Log availability status
+            available_agents = [
+                agent for agent, status in self.agent_availability.items() if status
+            ]
+            unavailable_agents = [
+                agent for agent, status in self.agent_availability.items() if not status
+            ]
+
+            print("✅ Crew validation successful:")
+            print(f"   Available agents: {', '.join(available_agents)}")
+            if unavailable_agents:
+                print(f"   Unavailable agents: {', '.join(unavailable_agents)}")
+                print("   ⚠️  System will operate with reduced capability")
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Crew validation failed: {str(e)}")
+            return False
+
+    def get_available_agents(self) -> List[str]:
+        """
+        Get list of currently available agents.
+
+        Returns:
+            List of available agent names
+        """
+        return [agent for agent, status in self.agent_availability.items() if status]
+
+    def get_unavailable_agents(self) -> List[str]:
+        """
+        Get list of currently unavailable agents.
+
+        Returns:
+            List of unavailable agent names
+        """
+        return [
+            agent for agent, status in self.agent_availability.items() if not status
+        ]
+
     def execute_complete_evaluation(
         self, evaluation_input: EvaluationInput
     ) -> Dict[str, Any]:
         """
         Execute complete evaluation workflow from input to final synthesis.
+        Enhanced with resilience capabilities for partial agent availability.
 
         This method orchestrates the entire evaluation process in three main phases:
         1. Individual plan evaluations by primary and secondary judges
@@ -99,28 +214,82 @@ class AccessibilityEvaluationCrew:
 
         # Phase 1: Individual Plan Evaluations
         print("📋 Phase 1: Evaluating individual remediation plans...")
+        evaluation_results = self._execute_individual_evaluations(evaluation_input)
+        results["individual_evaluations"] = evaluation_results
+        print("✅ Individual evaluations complete")
+
+        # Phase 2: Cross-Plan Comparison
+        print("🔍 Phase 2: Performing cross-plan comparison analysis...")
+        comparison_result = self._execute_cross_plan_comparison(
+            evaluation_input, evaluation_results
+        )
+        results["comparison_analysis"] = comparison_result
+        print("✅ Cross-plan comparison complete")
+
+        # Phase 3: Optimal Plan Synthesis
+        print("🎯 Phase 3: Synthesizing optimal remediation plan...")
+        synthesis_result = self._execute_plan_synthesis(
+            evaluation_input, evaluation_results, comparison_result
+        )
+        results["optimal_plan"] = synthesis_result
+        print("✅ Optimal plan synthesis complete")
+
+        print("🎉 Complete evaluation workflow finished successfully!")
+        return results
+
+    def _execute_individual_evaluations(
+        self, evaluation_input: EvaluationInput
+    ) -> Dict[str, Any]:
+        """
+        Execute individual plan evaluations with resilience handling.
+
+        Args:
+            evaluation_input: The evaluation input
+
+        Returns:
+            Individual evaluation results
+        """
+        # Check which evaluation agents are available
+        available_judges = []
+        if self.agent_availability["primary_judge"]:
+            available_judges.append(self.agents["primary_judge"].agent)
+        if self.agent_availability["secondary_judge"]:
+            available_judges.append(self.agents["secondary_judge"].agent)
+
+        if not available_judges:
+            # If no judges available, create NA results
+            return self._create_na_evaluation_results(evaluation_input)
+
+        # Create evaluation tasks
         evaluation_tasks = self.task_managers[
             "evaluation"
         ].create_batch_evaluation_tasks(evaluation_input)
 
+        # Execute with available judges
         evaluation_crew = Crew(
-            agents=[
-                self.agents["primary_judge"].agent,
-                self.agents["secondary_judge"].agent,
-            ],
+            agents=available_judges,
             tasks=evaluation_tasks,
-            process=Process.sequential,  # Sequential to ensure proper task ordering
-            verbose=False,  # Disable verbose to reduce callback warnings
+            process=Process.sequential,
+            verbose=False,
         )
 
-        evaluation_results = evaluation_crew.kickoff()
-        results["individual_evaluations"] = evaluation_results
-        print(
-            f"✅ Individual evaluations complete: {len(evaluation_tasks)} tasks executed"
-        )
+        return evaluation_crew.kickoff()
 
-        # Phase 2: Cross-Plan Comparison
-        print("🔍 Phase 2: Performing cross-plan comparison analysis...")
+    def _execute_cross_plan_comparison(
+        self, evaluation_input: EvaluationInput, evaluation_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Execute cross-plan comparison with resilience handling.
+
+        Args:
+            evaluation_input: The evaluation input
+            evaluation_results: Results from individual evaluations
+
+        Returns:
+            Comparison analysis results
+        """
+        if not self.agent_availability["comparison_agent"]:
+            return {"status": "NA", "reason": "Comparison agent unavailable"}
 
         # Create mock plan evaluations for comparison (in real implementation,
         # these would be parsed from evaluation_results)
@@ -136,15 +305,35 @@ class AccessibilityEvaluationCrew:
             agents=[self.agents["comparison_agent"].agent],
             tasks=[comparison_task],
             process=Process.sequential,
-            verbose=False,  # Disable verbose to reduce callback warnings
+            verbose=False,
         )
 
-        comparison_result = comparison_crew.kickoff()
-        results["comparison_analysis"] = comparison_result
-        print("✅ Cross-plan comparison complete")
+        return comparison_crew.kickoff()
 
-        # Phase 3: Optimal Plan Synthesis
-        print("🎯 Phase 3: Synthesizing optimal remediation plan...")
+    def _execute_plan_synthesis(
+        self,
+        evaluation_input: EvaluationInput,
+        evaluation_results: Dict[str, Any],
+        comparison_result: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Execute plan synthesis with resilience handling.
+
+        Args:
+            evaluation_input: The evaluation input
+            evaluation_results: Results from individual evaluations
+            comparison_result: Results from cross-plan comparison
+
+        Returns:
+            Plan synthesis results
+        """
+        if not self.agent_availability["synthesis_agent"]:
+            return {"status": "NA", "reason": "Synthesis agent unavailable"}
+
+        # Create mock plan evaluations for synthesis (in real implementation,
+        # these would be parsed from evaluation_results)
+        sample_evaluations = self._create_sample_evaluations(evaluation_input)
+
         synthesis_task = self.task_managers[
             "synthesis"
         ].create_optimal_plan_synthesis_task(
@@ -157,15 +346,32 @@ class AccessibilityEvaluationCrew:
             agents=[self.agents["synthesis_agent"].agent],
             tasks=[synthesis_task],
             process=Process.sequential,
-            verbose=False,  # Disable verbose to reduce callback warnings
+            verbose=False,
         )
 
-        synthesis_result = synthesis_crew.kickoff()
-        results["optimal_plan"] = synthesis_result
-        print("✅ Optimal plan synthesis complete")
+        return synthesis_crew.kickoff()
 
-        print("🎉 Complete evaluation workflow finished successfully!")
-        return results
+    def _create_na_evaluation_results(
+        self, evaluation_input: EvaluationInput
+    ) -> Dict[str, Any]:
+        """
+        Create NA (Not Available) evaluation results when no agents are available.
+
+        Args:
+            evaluation_input: The evaluation input
+
+        Returns:
+            NA evaluation results
+        """
+        na_results = {}
+        for plan_name in evaluation_input.remediation_plans.keys():
+            na_results[plan_name] = {
+                "status": "NA",
+                "reason": "No evaluation agents available",
+                "evaluation_content": None,
+                "timestamp": datetime.now().isoformat(),
+            }
+        return na_results
 
     def execute_parallel_evaluation(
         self, evaluation_input: EvaluationInput
@@ -301,48 +507,3 @@ class AccessibilityEvaluationCrew:
                 "synthesis_agent": "openai",
             },
         }
-
-    def validate_configuration(self) -> bool:
-        """
-        Validate that all crew components are properly configured.
-
-        Returns:
-            True if configuration is valid, False otherwise
-        """
-        try:
-            # Check that all required agents are present
-            required_agents = [
-                "primary_judge",
-                "secondary_judge",
-                "comparison_agent",
-                "synthesis_agent",
-            ]
-            for agent_name in required_agents:
-                if agent_name not in self.agents:
-                    print(f"❌ Missing required agent: {agent_name}")
-                    return False
-
-                if not hasattr(self.agents[agent_name], "agent"):
-                    print(f"❌ Agent {agent_name} missing 'agent' attribute")
-                    return False
-
-            # Check that all task managers are present
-            required_managers = ["evaluation", "comparison", "synthesis"]
-            for manager_name in required_managers:
-                if manager_name not in self.task_managers:
-                    print(f"❌ Missing required task manager: {manager_name}")
-                    return False
-
-            # Check LLM manager configuration
-            if not hasattr(self.llm_manager, "gemini") or not hasattr(
-                self.llm_manager, "openai"
-            ):
-                print("❌ LLM manager missing required model configurations")
-                return False
-
-            print("✅ Crew configuration validation passed")
-            return True
-
-        except Exception as e:
-            print(f"❌ Configuration validation failed: {str(e)}")
-            return False

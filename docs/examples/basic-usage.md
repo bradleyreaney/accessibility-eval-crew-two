@@ -257,3 +257,151 @@ python scripts/phase4_demo.py
 - **[Report Generation Examples](./report-generation.md)**
 
 - **[API Reference](../api-reference/)**
+
+## 🚀 Basic Usage Examples
+
+### 1. Simple Evaluation
+
+```python
+from src.config.crew_config import AccessibilityEvaluationCrew
+from src.models.evaluation_models import EvaluationInput
+
+# Initialize crew
+crew = AccessibilityEvaluationCrew()
+
+# Create evaluation input
+evaluation_input = EvaluationInput(
+    audit_content="Your audit report content...",
+    plans_content=["Plan A content...", "Plan B content..."]
+)
+
+# Run evaluation
+results = crew.execute_complete_evaluation(evaluation_input)
+print(f"Evaluation completed: {len(results['evaluations'])} plans evaluated")
+```
+
+### 2. Parallel Evaluation with Consensus
+
+```python
+# Run parallel evaluation with consensus building
+results = crew.execute_parallel_evaluation(evaluation_input)
+
+# Access consensus results
+consensus_scores = results['consensus_scores']
+print(f"Consensus achieved for {len(consensus_scores)} plans")
+```
+
+### 3. Custom Configuration
+
+```python
+from src.config.llm_config import LLMManager
+from src.config.crew_config import AccessibilityEvaluationCrew
+
+# Custom LLM configuration
+llm_manager = LLMManager(
+    gemini_api_key="your_key",
+    openai_api_key="your_key"
+)
+
+# Initialize crew with custom configuration
+crew = AccessibilityEvaluationCrew(llm_manager=llm_manager)
+```
+
+## 🛡️ LLM Resilience Examples
+
+### 1. Handling LLM Failures Gracefully
+
+The system automatically handles LLM failures and provides partial results:
+
+```python
+from src.utils.llm_resilience_manager import LLMResilienceManager, ResilienceConfig
+from src.config.llm_config import LLMManager
+
+# Initialize resilience manager
+llm_manager = LLMManager()
+resilience_config = ResilienceConfig(
+    max_retries=3,
+    retry_delay_seconds=2,
+    enable_partial_evaluation=True
+)
+resilience_manager = LLMResilienceManager(llm_manager, resilience_config)
+
+# Check LLM availability
+availability = resilience_manager.check_llm_availability()
+print(f"Available LLMs: {sum(availability.values())}/2")
+
+# Execute with fallback handling
+results = resilience_manager.execute_with_fallback(evaluation_input)
+
+# Check for partial results
+if results.get('partial_evaluation'):
+    print("⚠️  Partial evaluation completed due to LLM issues")
+    na_count = results.get('na_evaluations', 0)
+    print(f"NA evaluations: {na_count}")
+```
+
+### 2. Monitoring LLM Health
+
+```python
+# Get detailed status information
+status = resilience_manager.get_status_summary()
+
+# Check specific LLM health
+gemini_status = status['llm_status']['gemini']
+if gemini_status['available']:
+    print("✅ Gemini Pro is healthy")
+else:
+    print(f"❌ Gemini Pro unavailable: {gemini_status['last_failure_reason']}")
+
+# Get evaluation statistics
+stats = resilience_manager.get_evaluation_statistics()
+print(f"Success rate: {stats['evaluation_stats']['successful_evaluations']}/{stats['evaluation_stats']['total_evaluations']}")
+```
+
+### 3. Custom Error Handling
+
+```python
+from src.utils.llm_exceptions import LLMConnectionError, LLMTimeoutError
+
+try:
+    result = crew.execute_complete_evaluation(evaluation_input)
+except LLMConnectionError as e:
+    print(f"Connection error: {e}")
+    # Handle connection issues
+except LLMTimeoutError as e:
+    print(f"Timeout error: {e}")
+    # Handle timeout issues
+except Exception as e:
+    print(f"Unexpected error: {e}")
+    # Handle other errors
+```
+
+### 4. CLI Usage with Resilience
+
+```bash
+# Normal evaluation with automatic resilience
+python main.py
+
+# Check LLM status before evaluation
+python main.py --dry-run --verbose
+
+# Example output with partial availability:
+# ✅ LLM availability check complete:
+#    Gemini Pro: Available
+#    GPT-4: Unavailable (Rate limit exceeded)
+# ⚠️  Operating with 1 available LLM(s)
+# 📊 Partial evaluation completed: 8/10 plans evaluated (80.0%)
+```
+
+### 5. Handling NA Results
+
+When evaluations fail, the system provides standardized NA results:
+
+```python
+# Check for NA results in evaluation output
+for evaluation in results['evaluations']:
+    if evaluation.get('status') == 'NA':
+        print(f"Plan {evaluation['plan_name']}: NA - {evaluation['na_reason']}")
+    else:
+        print(f"Plan {evaluation['plan_name']}: {evaluation['score']}")
+```

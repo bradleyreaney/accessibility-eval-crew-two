@@ -6,7 +6,7 @@
 
 Welcome to the comprehensive documentation for our enterprise-ready AI-powered accessibility evaluation system. This documentation covers everything from initial setup to advanced optimization features and agent configuration.
 
-**🎉 Project Status**: ✅ **COMPLETE** - All 5 phases implemented with 96.56% test coverage (359 tests)
+**🎉 Project Status**: ✅ **COMPLETE** - All 5 phases implemented with 96.56% test coverage (359 tests) including LLM error resilience
 
 ## 🎯 Quick Navigation
 
@@ -18,24 +18,28 @@ Welcome to the comprehensive documentation for our enterprise-ready AI-powered a
 
 ### 🤖 Technical Documentation
 - **[API Reference](api-reference/)** - Complete component documentation
-  - **[Agents API](api-reference/agents-api.md)** - CrewAI agent implementations
+  - **[Agents API](api-reference/agents-api.md)** - CrewAI agent implementations with LLM resilience
   - **[Report Generator](api-reference/report-generator.md)** - PDF and export functionality
-- **[Features](features/)** - Comprehensive feature documentation ✅ **NEW**
+- **[Features](features/)** - Comprehensive feature documentation ✅ **UPDATED**
   - **[LLM Error Resilience](features/llm-error-resilience.md)** - Graceful degradation and partial results
-- **[Examples](examples/)** - Practical usage examples and code patterns
-- **[Architecture](architecture/)** - System design and data flow documentation
+- **[Examples](examples/)** - Practical usage examples and code patterns ✅ **UPDATED**
+  - **[Basic Usage](examples/basic-usage.md)** - Including LLM resilience examples
+- **[Architecture](architecture/)** - System design and data flow documentation ✅ **UPDATED**
   - **[Data Flow](architecture/data-flow.md)** - Complete processing pipeline
+  - **[System Overview](architecture/system-overview.md)** - Updated with LLM resilience architecture
 
 ### 📋 Implementation History
-- **[Project Summary](PROJECT_SUMMARY.md)** - Complete project overview and achievements ✅
+- **[Project Summary](PROJECT_SUMMARY.md)** - Complete project overview and achievements ✅ **UPDATED**
 - **[Phase Reports](development/phase-reports/)** - Detailed completion reports for all phases ✅
 - **[Project Completion Audit](development/project-completion-audit.md)** - Final validation ✅
 
 ### 🏗️ Development Resources
 - **[Development Standards](development/README.md)** - Code quality and testing
-- **[Examples](examples/)** - Practical code examples and usage patterns
+- **[Examples](examples/)** - Practical code examples and usage patterns ✅ **UPDATED**
 - **[Reference](reference/)** - Quick reference guides and criteria documentation
 - **[Configuration Guide](development/configurations/)** - Environment setup
+- **[Troubleshooting](troubleshooting/)** - Common issues and solutions ✅ **UPDATED**
+  - **[Environment Issues](troubleshooting/environment-issues.md)** - Including LLM resilience troubleshooting
 
 ## 📊 Current Status
 
