@@ -11,6 +11,7 @@ from crewai import Agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from ..config.llm_config import LLMManager
+from ..utils.llm_exceptions import LLMError, classify_llm_error
 from .tools.plan_comparator import PlanComparatorTool
 from .tools.scoring_calculator import ScoringCalculatorTool
 
@@ -146,8 +147,15 @@ class ScoringAgent:
 
         except Exception as e:
             logger.error(f"Final scoring calculation failed: {e}")
+
+            # Classify the error for better handling
+            llm_error = classify_llm_error(e, "Gemini Pro")
+
             return {
                 "error": str(e),
+                "error_type": llm_error.__class__.__name__,
+                "retryable": llm_error.retryable,
+                "llm_type": "gemini",
                 "success": False,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
@@ -216,8 +224,15 @@ class ScoringAgent:
 
         except Exception as e:
             logger.error(f"Plan comparison failed: {e}")
+
+            # Classify the error for better handling
+            llm_error = classify_llm_error(e, "Gemini Pro")
+
             return {
                 "error": str(e),
+                "error_type": llm_error.__class__.__name__,
+                "retryable": llm_error.retryable,
+                "llm_type": "gemini",
                 "success": False,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }

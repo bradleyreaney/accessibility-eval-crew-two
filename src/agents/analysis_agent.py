@@ -11,6 +11,7 @@ from crewai import Agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from ..config.llm_config import LLMManager
+from ..utils.llm_exceptions import LLMError, classify_llm_error
 from .tools.gap_analyzer import GapAnalyzerTool
 from .tools.plan_comparator import PlanComparatorTool
 
@@ -168,8 +169,15 @@ class AnalysisAgent:
 
         except Exception as e:
             logger.error(f"Strategic analysis generation failed: {e}")
+
+            # Classify the error for better handling
+            llm_error = classify_llm_error(e, "GPT-4")
+
             return {
                 "error": str(e),
+                "error_type": llm_error.__class__.__name__,
+                "retryable": llm_error.retryable,
+                "llm_type": "openai",
                 "success": False,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
@@ -261,8 +269,15 @@ class AnalysisAgent:
 
         except Exception as e:
             logger.error(f"Implementation readiness analysis failed: {e}")
+
+            # Classify the error for better handling
+            llm_error = classify_llm_error(e, "GPT-4")
+
             return {
                 "error": str(e),
+                "error_type": llm_error.__class__.__name__,
+                "retryable": llm_error.retryable,
+                "llm_type": "openai",
                 "success": False,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
@@ -334,8 +349,15 @@ class AnalysisAgent:
 
         except Exception as e:
             logger.error(f"Executive summary generation failed: {e}")
+
+            # Classify the error for better handling
+            llm_error = classify_llm_error(e, "GPT-4")
+
             return {
                 "error": str(e),
+                "error_type": llm_error.__class__.__name__,
+                "retryable": llm_error.retryable,
+                "llm_type": "openai",
                 "success": False,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
