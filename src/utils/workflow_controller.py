@@ -7,6 +7,7 @@ evaluation workflow, tracks progress, and manages status updates for the UI.
 References:
     - Phase 4 Plan: Workflow Controller requirements
     - Master Plan: Workflow orchestration
+    - LLM Error Handling Enhancement Plan - Phase 2
 """
 
 import asyncio
@@ -18,6 +19,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from ..config.crew_config import AccessibilityEvaluationCrew
 from ..models.evaluation_models import EvaluationInput
+from .llm_resilience_manager import LLMResilienceManager, ResilienceConfig
 
 
 class WorkflowPhase(str, Enum):
@@ -65,21 +67,29 @@ class WorkflowController:
 
     This class provides the interface between the UI and the evaluation crew,
     managing asynchronous execution, progress tracking, and error handling.
+    Enhanced with LLM resilience capabilities for graceful degradation.
 
     Attributes:
         crew: The AccessibilityEvaluationCrew instance
+        resilience_manager: LLM resilience manager for failure handling
         current_status: Current workflow status
         current_task: Currently running asyncio task
     """
 
-    def __init__(self, crew: AccessibilityEvaluationCrew):
+    def __init__(
+        self,
+        crew: AccessibilityEvaluationCrew,
+        resilience_manager: Optional[LLMResilienceManager] = None,
+    ):
         """
         Initialize the workflow controller.
 
         Args:
             crew: Configured AccessibilityEvaluationCrew instance
+            resilience_manager: Optional LLM resilience manager for enhanced error handling
         """
         self.crew = crew
+        self.resilience_manager = resilience_manager
         self.current_status = WorkflowStatus()
         self.current_task: Optional[asyncio.Task] = None
 
@@ -99,25 +109,25 @@ class WorkflowController:
         include_consensus: bool = True,
     ) -> asyncio.Task:
         """
-        Start an evaluation workflow asynchronously.
+        Start the evaluation workflow asynchronously.
 
         Args:
-            evaluation_input: The evaluation input with audit report and plans
-            mode: Execution mode ("sequential" or "parallel")
+            evaluation_input: The evaluation input
+            mode: Execution mode (sequential, parallel)
             include_consensus: Whether to include consensus building
 
         Returns:
-            Asyncio Task representing the running evaluation
+            Asyncio task for the evaluation workflow
         """
         # Update status to running
         self.current_status = WorkflowStatus(
             status="running",
             progress=10,
-            phase=WorkflowPhase.INDIVIDUAL_EVALUATIONS,
+            phase=WorkflowPhase.INITIALIZATION,
             started_at=datetime.now(),
         )
 
-        # Create and start the evaluation task
+        # Create and start the async task
         self.current_task = asyncio.create_task(
             self._run_evaluation_workflow(evaluation_input, mode, include_consensus)
         )
@@ -129,6 +139,7 @@ class WorkflowController:
     ) -> Dict[str, Any]:
         """
         Internal method to run the evaluation workflow with progress tracking.
+        Enhanced with LLM resilience capabilities for graceful degradation.
 
         Args:
             evaluation_input: The evaluation input
@@ -142,6 +153,38 @@ class WorkflowController:
             Exception: If evaluation fails
         """
         try:
+            # Check LLM availability before starting if resilience manager is available
+            availability_status = None
+            if self.resilience_manager:
+                availability_status = self.resilience_manager.check_llm_availability()
+
+                # Check if we have minimum required LLMs
+                available_count = sum(availability_status.values())
+                if (
+                    available_count
+                    < self.resilience_manager.config.minimum_llm_requirement
+                ):
+                    raise RuntimeError(
+                        f"Insufficient LLMs available ({available_count}). "
+                        f"Minimum required: {self.resilience_manager.config.minimum_llm_requirement}"
+                    )
+
+                # Log availability status
+                available_llms = [
+                    llm for llm, status in availability_status.items() if status
+                ]
+                unavailable_llms = [
+                    llm for llm, status in availability_status.items() if not status
+                ]
+
+                if unavailable_llms:
+                    print(
+                        f"⚠️  Warning: Some LLMs unavailable: {', '.join(unavailable_llms)}"
+                    )
+                    print(
+                        f"✅ Continuing with available LLMs: {', '.join(available_llms)}"
+                    )
+
             # Phase 1: Individual Evaluations (10-40%)
             self._update_progress(40, WorkflowPhase.INDIVIDUAL_EVALUATIONS)
 
@@ -155,11 +198,17 @@ class WorkflowController:
             # Phase 4: Plan Synthesis (75-90%)
             self._update_progress(90, WorkflowPhase.PLAN_SYNTHESIS)
 
-            # Run the actual evaluation
-            if mode == "parallel":
-                results = self.crew.execute_parallel_evaluation(evaluation_input)
+            # Run the actual evaluation with resilience handling
+            if self.resilience_manager:
+                results = await self._execute_resilient_evaluation(
+                    evaluation_input, mode, availability_status
+                )
             else:
-                results = self.crew.execute_complete_evaluation(evaluation_input)
+                # Fallback to original execution if no resilience manager
+                if mode == "parallel":
+                    results = self.crew.execute_parallel_evaluation(evaluation_input)
+                else:
+                    results = self.crew.execute_complete_evaluation(evaluation_input)
 
             # Phase 5: Final Compilation (90-100%)
             self._update_progress(100, WorkflowPhase.FINAL_COMPILATION)
@@ -183,61 +232,76 @@ class WorkflowController:
                 phase=self.current_status.phase,
                 error=str(e),
                 started_at=self.current_status.started_at,
+                completed_at=datetime.now(),
             )
             raise
 
-    def _update_progress(self, progress: int, phase: WorkflowPhase) -> None:
+    async def _execute_resilient_evaluation(
+        self,
+        evaluation_input: EvaluationInput,
+        mode: str,
+        availability_status: Dict[str, bool],
+    ) -> Dict[str, Any]:
         """
-        Update the current workflow progress and phase.
+        Execute evaluation with LLM resilience handling.
 
         Args:
-            progress: Progress percentage (0-100)
-            phase: Current workflow phase
-        """
-        self.current_status = WorkflowStatus(
-            status="running",
-            progress=progress,
-            phase=phase.value,
-            started_at=self.current_status.started_at,
-        )
-
-    def stop_evaluation(self) -> None:
-        """
-        Stop the currently running evaluation.
-
-        Cancels the current task if running and updates status.
-        """
-        if self.current_task and self.current_status.status == "running":
-            self.current_task.cancel()
-            self.current_status = WorkflowStatus(
-                status="cancelled",
-                progress=self.current_status.progress,
-                phase=self.current_status.phase,
-                started_at=self.current_status.started_at,
-            )
-
-    def estimate_time(self, evaluation_input: EvaluationInput) -> int:
-        """
-        Estimate the time required for evaluation in minutes.
-
-        Args:
-            evaluation_input: The evaluation input to estimate time for
+            evaluation_input: The evaluation input
+            mode: Execution mode
+            availability_status: Current LLM availability status
 
         Returns:
-            Estimated time in minutes
+            Evaluation results with resilience information
         """
-        # Base time estimation logic
-        base_time = 3  # Base 3 minutes
+        # Add availability information to results
+        results = {
+            "llm_availability": availability_status,
+            "resilience_info": {
+                "partial_evaluation": not all(availability_status.values()),
+                "available_llms": [
+                    llm for llm, status in availability_status.items() if status
+                ],
+                "unavailable_llms": [
+                    llm for llm, status in availability_status.items() if not status
+                ],
+            },
+        }
 
-        # Add time based on number of plans (1 minute per additional plan)
+        # Execute evaluation based on mode
+        if mode == "parallel":
+            evaluation_results = self.crew.execute_parallel_evaluation(evaluation_input)
+        else:
+            evaluation_results = self.crew.execute_complete_evaluation(evaluation_input)
+
+        # Merge results
+        results.update(evaluation_results)
+
+        return results
+
+    def _update_progress(self, progress: int, phase: WorkflowPhase):
+        """Update workflow progress and phase"""
+        self.current_status.progress = progress
+        self.current_status.phase = phase
+
+    def estimate_completion_time(self, evaluation_input: EvaluationInput) -> int:
+        """
+        Estimate completion time in minutes based on input complexity.
+
+        Args:
+            evaluation_input: The evaluation input
+
+        Returns:
+            Estimated completion time in minutes
+        """
+        # Base time for evaluation workflow
+        base_time = 5  # minutes
+
+        # Scale based on number of plans
         plan_count = len(evaluation_input.remediation_plans)
-        plan_time = max(0, plan_count - 1) * 1
+        scaled_time = base_time + (plan_count * 2)  # 2 minutes per plan
 
-        # Add time based on total page count (0.1 minutes per page)
-        total_pages = evaluation_input.audit_report.page_count
-        total_pages += sum(
-            plan.page_count for plan in evaluation_input.remediation_plans.values()
-        )
-        page_time = int(total_pages * 0.1)
+        # Add time for audit report complexity
+        audit_pages = evaluation_input.audit_report.page_count
+        scaled_time += max(0, (audit_pages - 5) * 0.5)  # 0.5 minutes per page over 5
 
-        return base_time + plan_time + page_time
+        return int(scaled_time)

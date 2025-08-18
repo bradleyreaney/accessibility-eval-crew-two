@@ -488,6 +488,34 @@ class LLMResilienceManager:
             "timestamp": datetime.now().isoformat(),
         }
 
+    def get_evaluation_statistics(self) -> Dict[str, Any]:
+        """
+        Get evaluation statistics for reporting.
+
+        Returns:
+            Dictionary containing evaluation statistics
+        """
+        return {
+            "evaluation_stats": self.evaluation_stats.copy(),
+            "llm_availability": {
+                llm_type: status.available
+                for llm_type, status in self.llm_status.items()
+            },
+            "failure_counts": {
+                llm_type: status.failure_count
+                for llm_type, status in self.llm_status.items()
+            },
+            "consecutive_failures": {
+                llm_type: status.consecutive_failures
+                for llm_type, status in self.llm_status.items()
+            },
+            "last_check": {
+                llm_type: status.last_check.isoformat()
+                for llm_type, status in self.llm_status.items()
+            },
+            "timestamp": datetime.now().isoformat(),
+        }
+
     def reset_failure_counts(self):
         """Reset failure counts for all LLMs"""
         for status in self.llm_status.values():

@@ -39,6 +39,7 @@ from src.config.llm_config import LLMManager
 from src.models.evaluation_models import EvaluationCriteria, EvaluationInput
 from src.reports.generators.evaluation_report_generator import EvaluationReportGenerator
 from src.tools.file_discovery import FileDiscovery
+from src.utils.llm_resilience_manager import LLMResilienceManager, ResilienceConfig
 from src.utils.workflow_controller import WorkflowController
 
 # Apply environment-level suppression immediately
@@ -76,10 +77,12 @@ class AccessibilityEvaluationCLI:
 
     Provides comprehensive CLI functionality for automated evaluation of
     accessibility remediation plans using multi-agent workflows.
+    Enhanced with LLM resilience capabilities for graceful degradation.
 
     Attributes:
         config: CLI configuration management
         llm_manager: LLM connection and configuration
+        resilience_manager: LLM resilience manager for error handling
         file_discovery: Automated file discovery system
         report_generator: PDF report generation
         workflow_controller: Evaluation workflow orchestration
@@ -92,6 +95,7 @@ class AccessibilityEvaluationCLI:
         # Initialize core components that don't need arguments
         self.config: Optional[CLIConfiguration] = None
         self.llm_manager: Optional[LLMManager] = None
+        self.resilience_manager: Optional[LLMResilienceManager] = None
         self.file_discovery = FileDiscovery()
         self.report_generator = EvaluationReportGenerator()
         self.workflow_controller: Optional[WorkflowController] = None
@@ -188,24 +192,60 @@ Examples:
 
     def validate_environment(self) -> bool:
         """
-        Validate that all required environment variables and configurations are present.
+        Validate the environment and LLM configurations.
 
         Returns:
             True if environment is valid, False otherwise
         """
-        print("🔍 Validating Environment Configuration")
-
         try:
-            # Initialize LLM manager to validate API keys
+            print("🔧 Validating environment configuration...")
+
+            # Initialize CLI configuration
+            self.config = CLIConfiguration()
+
+            # Initialize LLM manager
             self.llm_manager = LLMManager.from_environment()
 
-            # Validate LLM configurations
-            connection_results = self.llm_manager.test_connections()
-            if not any(connection_results.values()):
+            # Initialize LLM resilience manager
+            resilience_config = ResilienceConfig(
+                max_retries=3,
+                retry_delay_seconds=2,
+                exponential_backoff=True,
+                timeout_seconds=30,
+                enable_partial_evaluation=True,
+                minimum_llm_requirement=1,
+                na_reporting_enabled=True,
+            )
+            self.resilience_manager = LLMResilienceManager(
+                self.llm_manager, resilience_config
+            )
+
+            # Validate LLM configurations with resilience manager
+            print("🔍 Checking LLM availability...")
+            availability_status = self.resilience_manager.check_llm_availability()
+
+            available_count = sum(availability_status.values())
+            if available_count < resilience_config.minimum_llm_requirement:
                 print(
-                    "❌ LLM configuration validation failed - no connections available"
+                    f"❌ LLM configuration validation failed - insufficient LLMs available ({available_count})"
                 )
                 return False
+
+            # Log availability status
+            available_llms = [
+                llm for llm, status in availability_status.items() if status
+            ]
+            unavailable_llms = [
+                llm for llm, status in availability_status.items() if not status
+            ]
+
+            print("✅ LLM availability check complete:")
+            print(
+                f"   Available: {', '.join(available_llms) if available_llms else 'None'}"
+            )
+            if unavailable_llms:
+                print(f"   Unavailable: {', '.join(unavailable_llms)}")
+                print("   ⚠️  System will operate with reduced capability")
 
             print("✅ Environment validation successful")
             return True
@@ -257,6 +297,7 @@ Examples:
     ) -> Dict[str, Any]:
         """
         Execute the complete evaluation workflow using CrewAI agents.
+        Enhanced with LLM resilience capabilities for graceful degradation.
 
         Args:
             evaluation_input: Structured input for evaluation
@@ -272,17 +313,35 @@ Examples:
 
         print("🤖 Initializing Multi-Agent Evaluation Crew")
 
-        # Create evaluation crew
-        crew = AccessibilityEvaluationCrew(self.llm_manager)
+        # Create evaluation crew with resilience manager
+        crew = AccessibilityEvaluationCrew(self.llm_manager, self.resilience_manager)
 
         # Validate crew configuration
         if not crew.validate_configuration():
             raise RuntimeError("Crew configuration validation failed")
 
-        # Initialize workflow controller
-        self.workflow_controller = WorkflowController(crew)
+        # Initialize workflow controller with resilience manager
+        self.workflow_controller = WorkflowController(crew, self.resilience_manager)
 
         print(f"⚡ Starting {mode.title()} Evaluation Workflow")
+
+        # Display resilience status if available
+        if self.resilience_manager:
+            availability_status = self.resilience_manager.check_llm_availability()
+            available_llms = [
+                llm for llm, status in availability_status.items() if status
+            ]
+            unavailable_llms = [
+                llm for llm, status in availability_status.items() if not status
+            ]
+
+            if unavailable_llms:
+                print(
+                    f"🛡️  Resilience Mode: Operating with {len(available_llms)} available LLM(s)"
+                )
+                print(f"   Unavailable: {', '.join(unavailable_llms)}")
+            else:
+                print("🛡️  Resilience Mode: All LLMs available")
 
         # Execute evaluation based on mode
         if mode == "single":
@@ -299,6 +358,12 @@ Examples:
             )
         else:
             raise ValueError(f"Unsupported evaluation mode: {mode}")
+
+        # Add resilience information to results if available
+        if self.resilience_manager:
+            results["resilience_stats"] = (
+                self.resilience_manager.get_evaluation_statistics()
+            )
 
         print("✅ Evaluation workflow completed successfully")
         return results
