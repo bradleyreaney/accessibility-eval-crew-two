@@ -12,7 +12,7 @@
 
 This system leverages **Large Language Models as Judges** to provide comprehensive, unbiased evaluation of accessibility remediation plans. Using CrewAI for multi-agent orchestration, it combines the expertise of Gemini Pro and GPT-4 to deliver professional-grade accessibility assessments through a command-line interface with automated PDF report generation.
 
-**Status: All 5 Phases Complete** - Enterprise-ready system with advanced consensus mechanisms, batch processing, and performance monitoring. All quality gates passing with 93.23% test coverage (August 2025).
+**Status: All 5 Phases Complete** - Enterprise-ready system with advanced consensus mechanisms, batch processing, performance monitoring, and LLM error resilience. All quality gates passing with 93.23% test coverage (August 2025).
 
 ### Key Features
 - 🤖 **Multi-Agent Evaluation**: 4 specialized CrewAI agents with Gemini Pro & GPT-4
@@ -32,6 +32,9 @@ This system leverages **Large Language Models as Judges** to provide comprehensi
 - ⚡ **Batch Processing**: Parallel evaluation of multiple reports with progress tracking
 - 📈 **Performance Monitoring**: Real-time metrics, intelligent caching, and optimization recommendations
 - 🛡️ **LLM Error Resilience**: Graceful degradation when one LLM fails, partial results with NA reporting
+- 🔄 **Workflow Integration**: Seamless integration of resilience manager into evaluation workflow
+- 📊 **Availability Monitoring**: Real-time LLM health tracking and status reporting
+- 🎛️ **Partial Evaluation**: System continues operating with reduced capability when some LLMs are unavailable
 
 ## 🚀 Quick Start
 

@@ -117,6 +117,31 @@ The system uses two AI judges for reliability:
 - Escalates major disagreements for review
 - Ensures consistent, reliable results
 
+### 🛡️ LLM Error Resilience
+
+The system includes robust error handling that ensures your evaluation continues even if one AI service becomes temporarily unavailable:
+
+**Graceful Degradation**:
+- If one LLM fails, the system automatically uses the other
+- Partial results are provided instead of complete failure
+- Failed evaluations are clearly marked as "NA" in reports
+- System continues operating with reduced capability
+
+**What You'll See**:
+- **Normal Operation**: Both LLMs available, full evaluation capability
+- **Partial Operation**: One LLM available, some evaluations may be marked "NA"
+- **Status Reporting**: Clear indication of LLM availability in CLI output
+- **Transparent Results**: Failed evaluations clearly identified in reports
+
+**Example Output**:
+```
+✅ LLM availability check complete:
+   Gemini Pro: Available
+   GPT-4: Unavailable (Rate limit exceeded)
+⚠️  Operating with 1 available LLM(s)
+📊 Partial evaluation completed: 8/10 plans evaluated (80.0%)
+```
+
 ### Evaluation Methodology
 
 #### WCAG 2.1 AA Alignment

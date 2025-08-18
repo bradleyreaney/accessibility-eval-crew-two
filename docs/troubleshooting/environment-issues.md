@@ -4,6 +4,133 @@ Complete troubleshooting guide for environment variable configuration and API co
 
 ## 🚨 Common Error Messages
 
+### LLM Connection Issues
+
+**Error**: `LLMConnectionError: Unable to connect to Gemini Pro`
+**Cause**: Network connectivity issues or API service unavailable.
+**Solutions**:
+1. **Check internet connection** - Ensure stable network connectivity
+2. **Verify API endpoints** - Confirm API services are operational
+3. **Check firewall settings** - Ensure outbound connections are allowed
+4. **Retry the operation** - The system will automatically retry with exponential backoff
+
+**Error**: `LLMTimeoutError: Request timed out after 30 seconds`
+**Cause**: LLM service taking too long to respond.
+**Solutions**:
+1. **Increase timeout settings** - Modify `LLM_TIMEOUT` environment variable
+2. **Check service status** - Verify LLM services are not experiencing high load
+3. **Retry the operation** - Transient timeouts are automatically retried
+
+### LLM Rate Limiting
+
+**Error**: `LLMRateLimitError: Rate limit exceeded for OpenAI API`
+**Cause**: API rate limits exceeded.
+**Solutions**:
+1. **Check API quotas** - Verify current usage and limits
+2. **Implement rate limiting** - Add delays between requests
+3. **Upgrade API plan** - Consider higher rate limits if needed
+4. **Use fallback LLM** - System will automatically use alternative LLM
+
+### LLM Authentication Issues
+
+**Error**: `LLMAuthenticationError: Invalid API key for Gemini Pro`
+**Cause**: Invalid or expired API key.
+**Solutions**:
+1. **Verify API keys** - Check environment variables are correctly set
+2. **Regenerate API keys** - Create new keys if current ones are invalid
+3. **Check key permissions** - Ensure keys have required permissions
+4. **Restart application** - Reload environment variables
+
+### LLM Quota Issues
+
+**Error**: `LLMQuotaExceededError: Quota exceeded for OpenAI API`
+**Cause**: API quota or billing limit reached.
+**Solutions**:
+1. **Check billing status** - Verify account has sufficient credits
+2. **Monitor usage** - Track API usage to prevent future issues
+3. **Upgrade plan** - Consider higher quota limits
+4. **Use alternative LLM** - System will fallback to available LLM
+
+## 🛡️ LLM Resilience Troubleshooting
+
+### Partial Evaluation Issues
+
+**Symptom**: Some evaluations marked as "NA" in results
+**Cause**: One or more LLMs unavailable during evaluation
+**Solutions**:
+1. **Check LLM status** - Review availability status in CLI output
+2. **Verify API keys** - Ensure all required API keys are valid
+3. **Check network connectivity** - Confirm stable internet connection
+4. **Review error logs** - Check specific failure reasons in logs
+
+**Example Output**:
+```
+✅ LLM availability check complete:
+   Gemini Pro: Available
+   GPT-4: Unavailable (Rate limit exceeded)
+⚠️  Operating with 1 available LLM(s)
+📊 Partial evaluation completed: 8/10 plans evaluated (80.0%)
+```
+
+### High Retry Counts
+
+**Symptom**: Many retry attempts visible in logs
+**Cause**: Persistent LLM connectivity or service issues
+**Solutions**:
+1. **Check network stability** - Ensure consistent internet connection
+2. **Review API rate limits** - Verify not hitting rate limits
+3. **Increase retry delays** - Modify `LLM_RETRY_DELAY` environment variable
+4. **Check service status** - Verify LLM services are operational
+
+### Complete LLM Failure
+
+**Symptom**: All evaluations marked as "NA"
+**Cause**: No LLMs available for evaluation
+**Solutions**:
+1. **Check all API keys** - Verify both Gemini and OpenAI keys are valid
+2. **Test connectivity** - Use `--dry-run --verbose` to check LLM status
+3. **Review error messages** - Check specific failure reasons
+4. **Contact support** - If issues persist, check LLM service status pages
+
+### Monitoring LLM Health
+
+**Command**: Check LLM status before evaluation
+```bash
+python main.py --dry-run --verbose
+```
+
+**Expected Output**:
+```
+✅ Environment validation complete
+✅ LLM availability check complete:
+   Gemini Pro: Available
+   GPT-4: Available
+✅ All systems operational
+```
+
+**Troubleshooting Commands**:
+```bash
+# Check specific LLM status
+python -c "
+from src.utils.llm_resilience_manager import LLMResilienceManager
+from src.config.llm_config import LLMManager
+
+manager = LLMResilienceManager(LLMManager())
+status = manager.check_llm_availability()
+print(f'LLM Status: {status}')
+"
+
+# Get detailed health information
+python -c "
+from src.utils.llm_resilience_manager import LLMResilienceManager
+from src.config.llm_config import LLMManager
+
+manager = LLMResilienceManager(LLMManager())
+stats = manager.get_evaluation_statistics()
+print(f'Evaluation Statistics: {stats}')
+"
+```
+
 ### "Required environment variables are missing"
 
 **Cause**: One or both API keys are not set as environment variables.
