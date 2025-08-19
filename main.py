@@ -190,9 +190,12 @@ Examples:
 
         return parser
 
-    def validate_environment(self) -> bool:
+    def validate_environment(self, args: argparse.Namespace) -> bool:
         """
         Validate the environment and LLM configurations.
+
+        Args:
+            args: Parsed command line arguments
 
         Returns:
             True if environment is valid, False otherwise
@@ -200,8 +203,8 @@ Examples:
         try:
             print("🔧 Validating environment configuration...")
 
-            # Initialize CLI configuration
-            self.config = CLIConfiguration()
+            # Initialize CLI configuration with parsed arguments
+            self.config = CLIConfiguration(args)
 
             # Initialize LLM manager
             self.llm_manager = LLMManager.from_environment()
@@ -421,9 +424,6 @@ Examples:
             parser = self.setup_argument_parser()
             args = parser.parse_args()
 
-            # Initialize configuration with parsed arguments
-            self.config = CLIConfiguration(args)
-
             # Configure verbose logging if requested
             if args.verbose:
                 logging.basicConfig(level=logging.INFO)
@@ -433,7 +433,7 @@ Examples:
                 logging.basicConfig(level=logging.ERROR)
 
             # Validate environment configuration
-            if not self.validate_environment():
+            if not self.validate_environment(args):
                 print(
                     "❌ Environment validation failed. Please check your configuration."
                 )
