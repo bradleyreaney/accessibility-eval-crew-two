@@ -1421,6 +1421,212 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
 
         return report_paths
 
+    def _add_execution_configuration_section(
+        self, story: List, execution_metadata: Dict[str, Any]
+    ) -> None:
+        """Add execution configuration section to the story."""
+        story.append(Paragraph("Execution Configuration", self.styles["Heading2"]))
+
+        config = execution_metadata.get("configuration", {})
+        metadata_items = [
+            (
+                "Execution Time",
+                execution_metadata.get("execution_timestamp", "Unknown"),
+            ),
+            (
+                "Duration",
+                f"{execution_metadata.get('duration_minutes', 0):.1f} minutes",
+            ),
+            ("Mode", config.get("execution_mode", "Unknown")),
+            (
+                "Consensus Enabled",
+                "Yes" if config.get("consensus_enabled") else "No",
+            ),
+            ("Audit Directory", config.get("audit_dir", "Unknown")),
+            ("Plans Directory", config.get("plans_dir", "Unknown")),
+            ("Output Directory", config.get("output_dir", "Unknown")),
+            ("Report Types", config.get("report_types", "Unknown")),
+        ]
+
+        for label, value in metadata_items:
+            story.append(Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"]))
+            story.append(Spacer(1, 0.1 * inch))
+
+    def _add_file_processing_summary_section(
+        self, story: List, execution_metadata: Dict[str, Any]
+    ) -> None:
+        """Add file processing summary section to the story."""
+        story.append(Paragraph("File Processing Summary", self.styles["Heading2"]))
+
+        audit_files = execution_metadata.get("audit_files", [])
+        plan_files = execution_metadata.get("plan_files", [])
+
+        story.append(
+            Paragraph(
+                f"<b>Audit Reports Processed:</b> {len(audit_files)}",
+                self.styles["Normal"],
+            )
+        )
+        for file_name in audit_files:
+            story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
+
+        story.append(Spacer(1, 0.2 * inch))
+        story.append(
+            Paragraph(
+                f"<b>Remediation Plans Processed:</b> {len(plan_files)}",
+                self.styles["Normal"],
+            )
+        )
+        for file_name in plan_files:
+            story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
+
+    def _add_results_summary_section(
+        self, story: List, evaluation_results: Dict[str, Any]
+    ) -> None:
+        """Add results summary section to the story."""
+        story.append(Paragraph("Results Summary", self.styles["Heading2"]))
+
+        # Check if we have any evaluation results
+        has_results = (
+            evaluation_results.get("individual_evaluations")
+            and len(evaluation_results["individual_evaluations"]) > 0
+        )
+
+        if has_results:
+            self._add_successful_results_summary(story, evaluation_results)
+        else:
+            self._add_no_results_summary(story, evaluation_results)
+
+    def _add_successful_results_summary(
+        self, story: List, evaluation_results: Dict[str, Any]
+    ) -> None:
+        """Add summary for successful evaluations."""
+        # Show synthesis plan if available
+        if evaluation_results.get("synthesis_plan"):
+            synthesis = evaluation_results["synthesis_plan"]
+            story.append(
+                Paragraph(
+                    f"<b>Recommended Plan:</b> {synthesis.get('title', 'Unknown')}",
+                    self.styles["Normal"],
+                )
+            )
+            story.append(Spacer(1, 0.1 * inch))
+
+        # Show evaluation count
+        story.append(
+            Paragraph(
+                f"<b>Plans Evaluated:</b> {len(evaluation_results['individual_evaluations'])}",
+                self.styles["Normal"],
+            )
+        )
+        story.append(Spacer(1, 0.1 * inch))
+
+        # Show completion statistics if available
+        if evaluation_results.get("resilience_stats"):
+            stats = evaluation_results["resilience_stats"].get("evaluation_stats", {})
+            if stats:
+                story.append(
+                    Paragraph(
+                        f"<b>Successful Evaluations:</b> {stats.get('successful_evaluations', 0)}",
+                        self.styles["Normal"],
+                    )
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+    def _add_no_results_summary(
+        self, story: List, evaluation_results: Dict[str, Any]
+    ) -> None:
+        """Add summary when no evaluation results are available."""
+        # No results available - show informative message
+        story.append(
+            Paragraph(
+                "<b>No Evaluation Results Available</b>",
+                self.styles["Normal"],
+            )
+        )
+        story.append(Spacer(1, 0.1 * inch))
+
+        # Show what might have happened
+        if evaluation_results.get("resilience_stats"):
+            stats = evaluation_results["resilience_stats"].get("evaluation_stats", {})
+            if stats:
+                story.append(
+                    Paragraph(
+                        f"<b>Evaluation Status:</b> {stats.get('total_evaluations', 0)} total, "
+                        f"{stats.get('successful_evaluations', 0)} successful, "
+                        f"{stats.get('failed_evaluations', 0)} failed, "
+                        f"{stats.get('na_evaluations', 0)} N/A",
+                        self.styles["Normal"],
+                    )
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+        # Show LLM availability status
+        if evaluation_results.get("resilience_stats"):
+            llm_status = evaluation_results["resilience_stats"].get(
+                "llm_availability", {}
+            )
+            if llm_status:
+                available_llms = [llm for llm, status in llm_status.items() if status]
+                unavailable_llms = [
+                    llm for llm, status in llm_status.items() if not status
+                ]
+
+                if available_llms:
+                    story.append(
+                        Paragraph(
+                            f"<b>Available LLMs:</b> {', '.join(available_llms)}",
+                            self.styles["Normal"],
+                        )
+                    )
+                    story.append(Spacer(1, 0.1 * inch))
+
+                if unavailable_llms:
+                    story.append(
+                        Paragraph(
+                            f"<b>Unavailable LLMs:</b> {', '.join(unavailable_llms)}",
+                            self.styles["Normal"],
+                        )
+                    )
+                    story.append(Spacer(1, 0.1 * inch))
+
+        story.append(
+            Paragraph(
+                "<i>Note: The evaluation may have failed due to LLM unavailability, "
+                "timeout, or other technical issues. Check the logs for more details.</i>",
+                self.styles["Normal"],
+            )
+        )
+        story.append(Spacer(1, 0.1 * inch))
+
+    def _add_system_information_section(
+        self, story: List, execution_metadata: Dict[str, Any]
+    ) -> None:
+        """Add system information section to the story."""
+        story.append(PageBreak())
+        story.append(Paragraph("System Information", self.styles["Heading2"]))
+
+        system_info = execution_metadata.get("system_info", {})
+        env_info = execution_metadata.get("environment", {})
+
+        system_items = [
+            ("Python Version", system_info.get("python_version", "Unknown")),
+            ("Platform", system_info.get("platform", "Unknown")),
+            ("Working Directory", system_info.get("cwd", "Unknown")),
+            (
+                "Google API Configured",
+                "Yes" if env_info.get("google_api_configured") else "No",
+            ),
+            (
+                "OpenAI API Configured",
+                "Yes" if env_info.get("openai_api_configured") else "No",
+            ),
+        ]
+
+        for label, value in system_items:
+            story.append(Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"]))
+            story.append(Spacer(1, 0.1 * inch))
+
     def create_execution_summary_report(
         self,
         evaluation_results: Dict[str, Any],
@@ -1458,201 +1664,13 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             story.append(title)
             story.append(Spacer(1, 0.5 * inch))
 
-            # Execution metadata
-            story.append(Paragraph("Execution Configuration", self.styles["Heading2"]))
-
-            config = execution_metadata.get("configuration", {})
-            metadata_items = [
-                (
-                    "Execution Time",
-                    execution_metadata.get("execution_timestamp", "Unknown"),
-                ),
-                (
-                    "Duration",
-                    f"{execution_metadata.get('duration_minutes', 0):.1f} minutes",
-                ),
-                ("Mode", config.get("execution_mode", "Unknown")),
-                (
-                    "Consensus Enabled",
-                    "Yes" if config.get("consensus_enabled") else "No",
-                ),
-                ("Audit Directory", config.get("audit_dir", "Unknown")),
-                ("Plans Directory", config.get("plans_dir", "Unknown")),
-                ("Output Directory", config.get("output_dir", "Unknown")),
-                ("Report Types", config.get("report_types", "Unknown")),
-            ]
-
-            for label, value in metadata_items:
-                story.append(
-                    Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"])
-                )
-                story.append(Spacer(1, 0.1 * inch))
-
+            # Add sections using helper methods
+            self._add_execution_configuration_section(story, execution_metadata)
             story.append(PageBreak())
-
-            # File processing summary
-            story.append(Paragraph("File Processing Summary", self.styles["Heading2"]))
-
-            audit_files = execution_metadata.get("audit_files", [])
-            plan_files = execution_metadata.get("plan_files", [])
-
-            story.append(
-                Paragraph(
-                    f"<b>Audit Reports Processed:</b> {len(audit_files)}",
-                    self.styles["Normal"],
-                )
-            )
-            for file_name in audit_files:
-                story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
-
-            story.append(Spacer(1, 0.2 * inch))
-            story.append(
-                Paragraph(
-                    f"<b>Remediation Plans Processed:</b> {len(plan_files)}",
-                    self.styles["Normal"],
-                )
-            )
-            for file_name in plan_files:
-                story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
-
+            self._add_file_processing_summary_section(story, execution_metadata)
             story.append(PageBreak())
-
-            # Results summary
-            story.append(Paragraph("Results Summary", self.styles["Heading2"]))
-
-            # Check if we have any evaluation results
-            has_results = (
-                evaluation_results.get("individual_evaluations")
-                and len(evaluation_results["individual_evaluations"]) > 0
-            )
-
-            if has_results:
-                # Show synthesis plan if available
-                if evaluation_results.get("synthesis_plan"):
-                    synthesis = evaluation_results["synthesis_plan"]
-                    story.append(
-                        Paragraph(
-                            f"<b>Recommended Plan:</b> {synthesis.get('title', 'Unknown')}",
-                            self.styles["Normal"],
-                        )
-                    )
-                    story.append(Spacer(1, 0.1 * inch))
-
-                # Show evaluation count
-                story.append(
-                    Paragraph(
-                        f"<b>Plans Evaluated:</b> {len(evaluation_results['individual_evaluations'])}",
-                        self.styles["Normal"],
-                    )
-                )
-                story.append(Spacer(1, 0.1 * inch))
-
-                # Show completion statistics if available
-                if evaluation_results.get("resilience_stats"):
-                    stats = evaluation_results["resilience_stats"].get(
-                        "evaluation_stats", {}
-                    )
-                    if stats:
-                        story.append(
-                            Paragraph(
-                                f"<b>Successful Evaluations:</b> {stats.get('successful_evaluations', 0)}",
-                                self.styles["Normal"],
-                            )
-                        )
-                        story.append(Spacer(1, 0.1 * inch))
-            else:
-                # No results available - show informative message
-                story.append(
-                    Paragraph(
-                        "<b>No Evaluation Results Available</b>",
-                        self.styles["Normal"],
-                    )
-                )
-                story.append(Spacer(1, 0.1 * inch))
-
-                # Show what might have happened
-                if evaluation_results.get("resilience_stats"):
-                    stats = evaluation_results["resilience_stats"].get(
-                        "evaluation_stats", {}
-                    )
-                    if stats:
-                        story.append(
-                            Paragraph(
-                                f"<b>Evaluation Status:</b> {stats.get('total_evaluations', 0)} total, "
-                                f"{stats.get('successful_evaluations', 0)} successful, "
-                                f"{stats.get('failed_evaluations', 0)} failed, "
-                                f"{stats.get('na_evaluations', 0)} N/A",
-                                self.styles["Normal"],
-                            )
-                        )
-                        story.append(Spacer(1, 0.1 * inch))
-
-                # Show LLM availability status
-                if evaluation_results.get("resilience_stats"):
-                    llm_status = evaluation_results["resilience_stats"].get(
-                        "llm_availability", {}
-                    )
-                    if llm_status:
-                        available_llms = [
-                            llm for llm, status in llm_status.items() if status
-                        ]
-                        unavailable_llms = [
-                            llm for llm, status in llm_status.items() if not status
-                        ]
-
-                        if available_llms:
-                            story.append(
-                                Paragraph(
-                                    f"<b>Available LLMs:</b> {', '.join(available_llms)}",
-                                    self.styles["Normal"],
-                                )
-                            )
-                            story.append(Spacer(1, 0.1 * inch))
-
-                        if unavailable_llms:
-                            story.append(
-                                Paragraph(
-                                    f"<b>Unavailable LLMs:</b> {', '.join(unavailable_llms)}",
-                                    self.styles["Normal"],
-                                )
-                            )
-                            story.append(Spacer(1, 0.1 * inch))
-
-                story.append(
-                    Paragraph(
-                        "<i>Note: The evaluation may have failed due to LLM unavailability, "
-                        "timeout, or other technical issues. Check the logs for more details.</i>",
-                        self.styles["Normal"],
-                    )
-                )
-                story.append(Spacer(1, 0.1 * inch))
-
-            # System information
-            story.append(PageBreak())
-            story.append(Paragraph("System Information", self.styles["Heading2"]))
-
-            system_info = execution_metadata.get("system_info", {})
-            env_info = execution_metadata.get("environment", {})
-
-            system_items = [
-                ("Python Version", system_info.get("python_version", "Unknown")),
-                ("Platform", system_info.get("platform", "Unknown")),
-                ("Working Directory", system_info.get("cwd", "Unknown")),
-                (
-                    "Google API Configured",
-                    "Yes" if env_info.get("google_api_configured") else "No",
-                ),
-                (
-                    "OpenAI API Configured",
-                    "Yes" if env_info.get("openai_api_configured") else "No",
-                ),
-            ]
-
-            for label, value in system_items:
-                story.append(
-                    Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"])
-                )
-                story.append(Spacer(1, 0.1 * inch))
+            self._add_results_summary_section(story, evaluation_results)
+            self._add_system_information_section(story, execution_metadata)
 
             # Build PDF
             doc.build(story)

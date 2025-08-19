@@ -220,6 +220,124 @@ class EvaluationParser:
         return ""
 
     @staticmethod
+    def _parse_list_results(
+        individual_results: List, parsed_results: Dict[str, Any]
+    ) -> None:
+        """Parse individual results when they are in a list format."""
+        for result in individual_results:
+            if isinstance(result, str):
+                # Direct string result
+                parsed = EvaluationParser.parse_evaluation_results(result)
+                plan_name = parsed.get("plan_name", "Unknown")
+                parsed_results["individual_evaluations"][plan_name] = parsed
+            elif hasattr(result, "raw") and result.raw:
+                # CrewOutput object with raw attribute
+                result_str = result.raw
+                parsed = EvaluationParser.parse_evaluation_results(result_str)
+                plan_name = parsed.get("plan_name", "Unknown")
+                parsed_results["individual_evaluations"][plan_name] = parsed
+            else:
+                # Try to convert to string
+                try:
+                    result_str = str(result)
+                    parsed = EvaluationParser.parse_evaluation_results(result_str)
+                    plan_name = parsed.get("plan_name", "Unknown")
+                    parsed_results["individual_evaluations"][plan_name] = parsed
+                except Exception as e:
+                    logger.warning(f"Could not parse result: {e}")
+
+    @staticmethod
+    def _parse_dict_results(
+        individual_results: Dict, parsed_results: Dict[str, Any]
+    ) -> None:
+        """Parse individual results when they are in a dictionary format."""
+        for plan_name, result in individual_results.items():
+            if isinstance(result, str):
+                parsed = EvaluationParser.parse_evaluation_results(result)
+                parsed_results["individual_evaluations"][plan_name] = parsed
+            else:
+                parsed_results["individual_evaluations"][plan_name] = result
+
+    @staticmethod
+    def _parse_iterable_results(
+        individual_results, parsed_results: Dict[str, Any]
+    ) -> None:
+        """Parse individual results when they are in an iterable format."""
+        try:
+            # Handle CrewOutput objects - they have a 'raw' attribute with the text
+            if hasattr(individual_results, "raw") and individual_results.raw:
+                result_str = individual_results.raw
+                parsed = EvaluationParser.parse_evaluation_results(result_str)
+                plan_name = parsed.get("plan_name", "Unknown")
+                parsed_results["individual_evaluations"][plan_name] = parsed
+            else:
+                # Try to iterate over the object
+                for result in individual_results:
+                    if isinstance(result, str):
+                        parsed = EvaluationParser.parse_evaluation_results(result)
+                        plan_name = parsed.get("plan_name", "Unknown")
+                        parsed_results["individual_evaluations"][plan_name] = parsed
+        except Exception as e:
+            logger.warning(f"Iteration failed: {e}")
+            # If iteration fails, try to convert to string
+            try:
+                result_str = str(individual_results)
+                parsed = EvaluationParser.parse_evaluation_results(result_str)
+                plan_name = parsed.get("plan_name", "Unknown")
+                parsed_results["individual_evaluations"][plan_name] = parsed
+            except Exception as e2:
+                logger.warning(f"Could not parse individual_results: {e2}")
+
+    @staticmethod
+    def _parse_fallback_results(crew_results, parsed_results: Dict[str, Any]) -> None:
+        """Parse results when individual_evaluations key is not present."""
+        if isinstance(crew_results, list):
+            # CrewAI kickoff() returns a list of task results
+            for result in crew_results:
+                if isinstance(result, str):
+                    parsed = EvaluationParser.parse_evaluation_results(result)
+                    plan_name = parsed.get("plan_name", "Unknown")
+                    parsed_results["individual_evaluations"][plan_name] = parsed
+        elif isinstance(crew_results, dict):
+            # If crew_results is a dictionary but doesn't have individual_evaluations key
+            # This might be the case if the structure is different
+            for key, value in crew_results.items():
+                if isinstance(value, list):
+                    # This might be the individual evaluations list
+                    for result in value:
+                        if isinstance(result, str):
+                            parsed = EvaluationParser.parse_evaluation_results(result)
+                            plan_name = parsed.get("plan_name", "Unknown")
+                            parsed_results["individual_evaluations"][plan_name] = parsed
+
+    @staticmethod
+    def _parse_analysis_results(
+        crew_results: Dict[str, Any], parsed_results: Dict[str, Any]
+    ) -> None:
+        """Parse comparison analysis and optimal plan results."""
+        # Parse comparison analysis
+        if "comparison_analysis" in crew_results:
+            comparison_result = crew_results["comparison_analysis"]
+            if isinstance(comparison_result, str):
+                parsed_results["comparison_analysis"] = {
+                    "analysis": comparison_result,
+                    "type": "text_analysis",
+                }
+            else:
+                parsed_results["comparison_analysis"] = comparison_result
+
+        # Parse optimal plan
+        if "optimal_plan" in crew_results:
+            optimal_result = crew_results["optimal_plan"]
+            if isinstance(optimal_result, str):
+                parsed_results["optimal_plan"] = {
+                    "synthesis": optimal_result,
+                    "type": "text_synthesis",
+                }
+            else:
+                parsed_results["optimal_plan"] = optimal_result
+
+    @staticmethod
     def parse_crew_results(crew_results: Dict[str, Any]) -> Dict[str, Any]:
         """
         Parse CrewAI results and extract structured evaluation data.
@@ -252,116 +370,20 @@ class EvaluationParser:
 
             # Handle different result formats
             if isinstance(individual_results, list):
-                # If it's a list of CrewOutput objects or strings
-                for result in individual_results:
-                    if isinstance(result, str):
-                        # Direct string result
-                        parsed = EvaluationParser.parse_evaluation_results(result)
-                        plan_name = parsed.get("plan_name", "Unknown")
-                        parsed_results["individual_evaluations"][plan_name] = parsed
-                    elif hasattr(result, "raw") and result.raw:
-                        # CrewOutput object with raw attribute
-                        result_str = result.raw
-                        parsed = EvaluationParser.parse_evaluation_results(result_str)
-                        plan_name = parsed.get("plan_name", "Unknown")
-                        parsed_results["individual_evaluations"][plan_name] = parsed
-                    else:
-                        # Try to convert to string
-                        try:
-                            result_str = str(result)
-                            parsed = EvaluationParser.parse_evaluation_results(
-                                result_str
-                            )
-                            plan_name = parsed.get("plan_name", "Unknown")
-                            parsed_results["individual_evaluations"][plan_name] = parsed
-                        except Exception as e:
-                            logger.warning(f"Could not parse result: {e}")
+                EvaluationParser._parse_list_results(individual_results, parsed_results)
             elif isinstance(individual_results, dict):
-                # If it's already a dictionary
-                for plan_name, result in individual_results.items():
-                    if isinstance(result, str):
-                        parsed = EvaluationParser.parse_evaluation_results(result)
-                        parsed_results["individual_evaluations"][plan_name] = parsed
-                    else:
-                        parsed_results["individual_evaluations"][plan_name] = result
+                EvaluationParser._parse_dict_results(individual_results, parsed_results)
             elif hasattr(individual_results, "__iter__") and not isinstance(
                 individual_results, str
             ):
-                # Handle CrewOutput objects and other iterables
-                try:
-                    # Handle CrewOutput objects - they have a 'raw' attribute with the text
-                    if hasattr(individual_results, "raw") and individual_results.raw:
-                        result_str = individual_results.raw
-                        parsed = EvaluationParser.parse_evaluation_results(result_str)
-                        plan_name = parsed.get("plan_name", "Unknown")
-                        parsed_results["individual_evaluations"][plan_name] = parsed
-                    else:
-                        # Try to iterate over the object
-                        for result in individual_results:
-                            if isinstance(result, str):
-                                parsed = EvaluationParser.parse_evaluation_results(
-                                    result
-                                )
-                                plan_name = parsed.get("plan_name", "Unknown")
-                                parsed_results["individual_evaluations"][
-                                    plan_name
-                                ] = parsed
-                except Exception as e:
-                    print(f"DEBUG: Iteration failed: {e}")
-                    # If iteration fails, try to convert to string
-                    try:
-                        result_str = str(individual_results)
-                        print(f"DEBUG: Converted to string: {result_str[:500]}...")
-                        parsed = EvaluationParser.parse_evaluation_results(result_str)
-                        plan_name = parsed.get("plan_name", "Unknown")
-                        parsed_results["individual_evaluations"][plan_name] = parsed
-                    except Exception as e2:
-                        logger.warning(f"Could not parse individual_results: {e2}")
+                EvaluationParser._parse_iterable_results(
+                    individual_results, parsed_results
+                )
         else:
-            # If individual_evaluations is not in crew_results, check if crew_results itself is a list
-            if isinstance(crew_results, list):
-                # CrewAI kickoff() returns a list of task results
-                for result in crew_results:
-                    if isinstance(result, str):
-                        parsed = EvaluationParser.parse_evaluation_results(result)
-                        plan_name = parsed.get("plan_name", "Unknown")
-                        parsed_results["individual_evaluations"][plan_name] = parsed
-            elif isinstance(crew_results, dict):
-                # If crew_results is a dictionary but doesn't have individual_evaluations key
-                # This might be the case if the structure is different
-                for key, value in crew_results.items():
-                    if isinstance(value, list):
-                        # This might be the individual evaluations list
-                        for result in value:
-                            if isinstance(result, str):
-                                parsed = EvaluationParser.parse_evaluation_results(
-                                    result
-                                )
-                                plan_name = parsed.get("plan_name", "Unknown")
-                                parsed_results["individual_evaluations"][
-                                    plan_name
-                                ] = parsed
+            # If individual_evaluations is not in crew_results, try fallback parsing
+            EvaluationParser._parse_fallback_results(crew_results, parsed_results)
 
-        # Parse comparison analysis
-        if "comparison_analysis" in crew_results:
-            comparison_result = crew_results["comparison_analysis"]
-            if isinstance(comparison_result, str):
-                parsed_results["comparison_analysis"] = {
-                    "analysis": comparison_result,
-                    "type": "text_analysis",
-                }
-            else:
-                parsed_results["comparison_analysis"] = comparison_result
-
-        # Parse optimal plan
-        if "optimal_plan" in crew_results:
-            optimal_result = crew_results["optimal_plan"]
-            if isinstance(optimal_result, str):
-                parsed_results["optimal_plan"] = {
-                    "synthesis": optimal_result,
-                    "type": "text_synthesis",
-                }
-            else:
-                parsed_results["optimal_plan"] = optimal_result
+        # Parse analysis results
+        EvaluationParser._parse_analysis_results(crew_results, parsed_results)
 
         return parsed_results
