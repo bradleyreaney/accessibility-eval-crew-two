@@ -142,6 +142,15 @@ class TestErrorClassification:
         assert classified.llm_type == "GPT-4"
         assert "rate limit" in str(classified).lower()
 
+    def test_classify_429_error_code(self):
+        """Test classification of 429 error codes"""
+        error_429_exception = Exception("Error code: 429 - Rate limit exceeded")
+        classified = classify_llm_error(error_429_exception, "GPT-4")
+
+        assert isinstance(classified, LLMRateLimitError)
+        assert classified.llm_type == "GPT-4"
+        assert classified.retryable is True
+
     def test_classify_authentication_error(self):
         """Test classification of authentication errors"""
         auth_exception = Exception("Authentication failed: Invalid API key")
@@ -155,6 +164,15 @@ class TestErrorClassification:
         """Test classification of quota exceeded errors"""
         quota_exception = Exception("Quota exceeded for this billing period")
         classified = classify_llm_error(quota_exception, "GPT-4")
+
+        assert isinstance(classified, LLMQuotaExceededError)
+        assert classified.llm_type == "GPT-4"
+        assert classified.retryable is False
+
+    def test_classify_insufficient_quota_error(self):
+        """Test classification of insufficient_quota errors (OpenAI specific)"""
+        insufficient_quota_exception = Exception("insufficient_quota")
+        classified = classify_llm_error(insufficient_quota_exception, "GPT-4")
 
         assert isinstance(classified, LLMQuotaExceededError)
         assert classified.llm_type == "GPT-4"

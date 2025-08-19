@@ -115,7 +115,7 @@ def classify_llm_error(error: Exception, llm_type: str) -> LLMError:
     # Check for rate limiting
     if any(
         keyword in error_str
-        for keyword in ["rate limit", "rate_limit", "too many requests"]
+        for keyword in ["rate limit", "rate_limit", "too many requests", "429"]
     ):
         return LLMRateLimitError(llm_type)
 
@@ -128,7 +128,8 @@ def classify_llm_error(error: Exception, llm_type: str) -> LLMError:
 
     # Check for quota exceeded
     if any(
-        keyword in error_str for keyword in ["quota", "billing", "payment required"]
+        keyword in error_str
+        for keyword in ["quota", "billing", "payment required", "insufficient_quota"]
     ):
         return LLMQuotaExceededError(llm_type, str(error))
 
