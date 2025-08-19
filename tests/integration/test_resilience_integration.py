@@ -167,7 +167,7 @@ class TestResilienceIntegration:
 
             # Execute evaluation with retry logic
             result = self.resilience_manager.safe_llm_invoke(
-                self.mock_llm_manager.gemini_llm, "Test prompt", max_retries=3
+                self.mock_llm_manager.gemini_llm, "Test prompt", "gemini"
             )
 
             # Verify recovery after retries
@@ -189,7 +189,7 @@ class TestResilienceIntegration:
             mock_availability.return_value = {"gemini": True, "openai": False}
 
             result = self.resilience_manager.safe_llm_invoke(
-                self.mock_llm_manager.gemini_llm, "Test prompt", max_retries=2
+                self.mock_llm_manager.gemini_llm, "Test prompt", "gemini"
             )
 
             # Should fail after retries
@@ -202,7 +202,7 @@ class TestResilienceIntegration:
         )
 
         result = self.resilience_manager.safe_llm_invoke(
-            self.mock_llm_manager.gemini_llm, "Test prompt", max_retries=1
+            self.mock_llm_manager.gemini_llm, "Test prompt", "gemini"
         )
 
         # Should fail immediately (rate limit is not retryable)
@@ -366,7 +366,7 @@ class TestResilienceIntegration:
                 mock_availability.return_value = {"gemini": True, "openai": False}
 
                 result = self.resilience_manager.safe_llm_invoke(
-                    self.mock_llm_manager.gemini_llm, "Test prompt", max_retries=1
+                    self.mock_llm_manager.gemini_llm, "Test prompt", "gemini"
                 )
 
                 # Verify error was handled appropriately
@@ -401,7 +401,7 @@ class TestResilienceIntegration:
 
             # Execute with retry logic
             result = self.resilience_manager.safe_llm_invoke(
-                self.mock_llm_manager.gemini_llm, "Test prompt", max_retries=3
+                self.mock_llm_manager.gemini_llm, "Test prompt", "gemini"
             )
 
             # Verify successful recovery

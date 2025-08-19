@@ -186,8 +186,8 @@ except ImportError as e:
         assert result.returncode == 0
         assert "SUCCESS: All CLI components imported" in result.stdout
 
-    def test_cli_clear_historical_reports_functionality(self):
-        """Test CLI historical reports cleanup functionality"""
+    def test_cli_clear_historical_data_functionality(self):
+        """Test CLI historical data cleanup functionality"""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             output_dir = temp_path / "reports"
@@ -219,7 +219,7 @@ except ImportError as e:
             from main import AccessibilityEvaluationCLI
 
             cli = AccessibilityEvaluationCLI()
-            cli.clear_historical_reports(output_dir)
+            cli.clear_historical_data(output_dir)
 
             # Verify cleanup was successful
             remaining_files = list(output_dir.glob("*"))
@@ -342,7 +342,7 @@ except ImportError as e:
             for color_name in required_colors:
                 assert color_name in report_generator.colors
 
-    def test_cli_clear_historical_reports_empty_directory(self):
+    def test_cli_clear_historical_data_empty_directory(self):
         """Test cleanup functionality with empty directory"""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -359,13 +359,13 @@ except ImportError as e:
             cli = AccessibilityEvaluationCLI()
 
             # Should not raise any errors
-            cli.clear_historical_reports(output_dir)
+            cli.clear_historical_data(output_dir)
 
             # Directory should still exist and be empty
             assert output_dir.exists()
             assert len(list(output_dir.glob("*"))) == 0
 
-    def test_cli_clear_historical_reports_nonexistent_directory(self):
+    def test_cli_clear_historical_data_nonexistent_directory(self):
         """Test cleanup functionality with nonexistent directory"""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -381,7 +381,7 @@ except ImportError as e:
             cli = AccessibilityEvaluationCLI()
 
             # Should not raise any errors and should create directory
-            cli.clear_historical_reports(output_dir)
+            cli.clear_historical_data(output_dir)
 
             # Directory should now exist and be empty
             assert output_dir.exists()
@@ -398,7 +398,7 @@ except ImportError as e:
 
         assert result.returncode == 0
         assert "--keep-history" in result.stdout
-        assert "Keep historical reports" in result.stdout
+        assert "Keep historical data" in result.stdout
 
 
 if __name__ == "__main__":
