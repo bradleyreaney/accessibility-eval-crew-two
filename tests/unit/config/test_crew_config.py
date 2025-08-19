@@ -281,8 +281,14 @@ class TestAccessibilityEvaluationCrew:
         result = crew._execute_individual_evaluations(sample_evaluation_input)
 
         # Assert
-        assert result == {"result": "test"}
-        mock_crew_class.assert_called_once()
+        # The result should be a list since we have 2 plans
+        assert isinstance(result, list)
+        assert len(result) == 2
+        # Each result should contain the mocked response
+        for item in result:
+            assert item == {"result": "test"}
+        # Should be called twice (once for each plan)
+        assert mock_crew_class.call_count == 2
         # Should have both judges in the crew
         called_agents = mock_crew_class.call_args[1]["agents"]
         assert len(called_agents) == 2
@@ -316,8 +322,14 @@ class TestAccessibilityEvaluationCrew:
         result = crew._execute_individual_evaluations(sample_evaluation_input)
 
         # Assert
-        assert result == {"result": "test"}
-        mock_crew_class.assert_called_once()
+        # The result should be a list since we have 2 plans
+        assert isinstance(result, list)
+        assert len(result) == 2
+        # Each result should contain the mocked response
+        for item in result:
+            assert item == {"result": "test"}
+        # Should be called twice (once for each plan)
+        assert mock_crew_class.call_count == 2
         # Should have only one judge in the crew
         called_agents = mock_crew_class.call_args[1]["agents"]
         assert len(called_agents) == 1
@@ -337,12 +349,20 @@ class TestAccessibilityEvaluationCrew:
         result = crew._execute_individual_evaluations(sample_evaluation_input)
 
         # Assert
-        assert "PlanA" in result
-        assert "PlanB" in result
-        assert result["PlanA"]["status"] == "NA"
-        assert result["PlanA"]["reason"] == "No evaluation agents available"
-        assert result["PlanB"]["status"] == "NA"
-        assert result["PlanB"]["reason"] == "No evaluation agents available"
+        # The result should be a list of strings, not a dictionary
+        assert isinstance(result, list)
+        assert len(result) == 2  # One for each plan
+
+        # Check that both plans are mentioned in the results
+        plan_a_found = any("PlanA" in item for item in result)
+        plan_b_found = any("PlanB" in item for item in result)
+        assert plan_a_found, "PlanA should be mentioned in results"
+        assert plan_b_found, "PlanB should be mentioned in results"
+
+        # Check that the results contain the expected NA status information
+        for item in result:
+            assert "**Status:** NA" in item
+            assert "No evaluation agents available" in item
 
     @patch("src.config.crew_config.Crew")
     def test_execute_cross_plan_comparison_with_agent_available(
@@ -463,16 +483,20 @@ class TestAccessibilityEvaluationCrew:
         result = crew._create_na_evaluation_results(sample_evaluation_input)
 
         # Assert
-        assert "PlanA" in result
-        assert "PlanB" in result
-        assert result["PlanA"]["status"] == "NA"
-        assert result["PlanA"]["reason"] == "No evaluation agents available"
-        assert result["PlanA"]["evaluation_content"] is None
-        assert "timestamp" in result["PlanA"]
-        assert result["PlanB"]["status"] == "NA"
-        assert result["PlanB"]["reason"] == "No evaluation agents available"
-        assert result["PlanB"]["evaluation_content"] is None
-        assert "timestamp" in result["PlanB"]
+        # The result should be a list of strings, not a dictionary
+        assert isinstance(result, list)
+        assert len(result) == 2  # One for each plan
+
+        # Check that both plans are mentioned in the results
+        plan_a_found = any("PlanA" in item for item in result)
+        plan_b_found = any("PlanB" in item for item in result)
+        assert plan_a_found, "PlanA should be mentioned in results"
+        assert plan_b_found, "PlanB should be mentioned in results"
+
+        # Check that the results contain the expected NA status information
+        for item in result:
+            assert "**Status:** NA" in item
+            assert "No evaluation agents available" in item
 
     @patch("src.config.crew_config.Crew")
     def test_execute_complete_evaluation_with_resilience(

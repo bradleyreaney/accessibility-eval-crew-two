@@ -267,7 +267,7 @@ class LLMResilienceManager:
         }
 
     def mark_evaluation_as_na(
-        self, plan_name: str, llm_type: str, reason: str
+        self, plan_name: str, llm_type: str, reason: Optional[str]
     ) -> Dict[str, Any]:
         """
         Create standardized NA evaluation result.
@@ -275,12 +275,20 @@ class LLMResilienceManager:
         Args:
             plan_name: Name of the plan that couldn't be evaluated
             llm_type: Type of LLM that failed
-            reason: Reason for the failure
+            reason: Reason for the failure (can be None)
 
         Returns:
             Standardized NA evaluation result
         """
         self.evaluation_stats["na_evaluations"] += 1
+
+        # Handle None reason
+        if reason is None:
+            reason = "Unknown error"
+
+        # Truncate very long reasons
+        if len(reason) > 500:
+            reason = reason[:497] + "..."
 
         return {
             "plan_name": plan_name,
@@ -362,6 +370,16 @@ class LLMResilienceManager:
         self.evaluation_stats["successful_evaluations"] += completed
 
         return results
+
+    def evaluate_plan_with_fallback(
+        self, plan_name: str, plan_content: str, audit_context: str
+    ) -> Dict[str, Any]:
+        """
+        Public interface for plan evaluation with fallback.
+
+        This is a public alias for _evaluate_plan_with_fallback.
+        """
+        return self._evaluate_plan_with_fallback(plan_name, plan_content, audit_context)
 
     def _evaluate_plan_with_fallback(
         self, plan_name: str, plan_content: str, audit_context: str

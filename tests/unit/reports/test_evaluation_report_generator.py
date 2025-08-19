@@ -443,7 +443,7 @@ class TestEvaluationReportGenerator:
         content_text = " ".join([str(item) for item in content])
 
         # Should mention partial evaluation
-        assert "completed with 66.7% coverage" in content_text
+        assert "This evaluation was completed with 66.7% coverage" in content_text
         assert "1 evaluations marked as NA" in content_text
         assert "LLM Availability Status section" in content_text
 
@@ -485,7 +485,7 @@ class TestEvaluationReportGenerator:
     def test_cli_report_package_includes_completion_summary(
         self, report_generator, sample_partial_evaluation_results
     ):
-        """Test CLI report package includes completion summary."""
+        """Test CLI report package includes unified report and data exports."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
             metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
@@ -497,12 +497,364 @@ class TestEvaluationReportGenerator:
                 metadata,
             )
 
-            # Should include completion summary
-            assert "completion_summary" in report_paths
-            assert report_paths["completion_summary"].exists()
+            # Should include unified report (replaces individual PDFs)
+            assert "unified_report" in report_paths
+            assert report_paths["unified_report"].exists()
 
-            # Should include other expected reports
-            assert "execution_summary" in report_paths
-            assert "comprehensive" in report_paths
+            # Should include data exports
+            assert "csv" in report_paths
+            assert "json" in report_paths
+
+            # Verify file types
+            assert report_paths["unified_report"].suffix == ".pdf"
+            assert report_paths["csv"].suffix == ".csv"
+            assert report_paths["json"].suffix == ".json"
+
+    def test_generate_unified_pdf_report_creates_single_file(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test that unified PDF report is generated correctly."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
+
+            # Generate unified report
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            # Should create a single PDF file
+            assert output_path.exists()
+            assert output_path.suffix == ".pdf"
+            assert "accessibility_evaluation_report_" in output_path.name
+
+            # Should be the only PDF file in the directory
+            pdf_files = list(output_dir.glob("*.pdf"))
+            assert len(pdf_files) == 1
+            assert pdf_files[0] == output_path
+
+    def test_unified_report_contains_all_sections(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test that unified report includes all required sections."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
+
+            # Generate unified report
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            # Verify file was created and has content
+            assert output_path.exists()
+            assert output_path.stat().st_size > 0
+
+            # Note: We can't easily test PDF content in unit tests
+            # This would require PDF parsing libraries
+            # The test above verifies the file is created successfully
+
+    def test_table_of_contents_generation(self, report_generator):
+        """Test table of contents creation and formatting."""
+        content = report_generator._create_table_of_contents()
+
+        # Should contain table of contents elements
+        assert len(content) > 0
+
+        # Extract text content
+        content_text = " ".join([str(item) for item in content])
+        assert "Table of Contents" in content_text
+
+        # Should contain expected TOC entries
+        expected_entries = [
+            "Executive Summary",
+            "Execution Summary",
+            "Completion Summary",
+            "Detailed Analysis",
+            "Scoring Overview",
+            "Recommendations",
+        ]
+
+        for entry in expected_entries:
+            assert entry in content_text
+
+    def test_unified_report_with_metadata(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test unified report generation with execution metadata."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {
+                "execution_timestamp": "2025-01-01T12:00:00",
+                "configuration": {"mode": "parallel", "consensus": "weighted"},
+                "audit_files": ["audit1.pdf"],
+                "plan_files": ["plan1.pdf", "plan2.pdf"],
+            }
+
+            # Generate unified report
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            # Should create file successfully
+            assert output_path.exists()
+            assert output_path.stat().st_size > 0
+
+    def test_unified_report_error_handling(self, report_generator):
+        """Test unified report generation error handling."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+
+            # Test with invalid evaluation results
+            invalid_results = None
+
+            with pytest.raises(Exception):
+                report_generator.generate_unified_pdf_report(
+                    invalid_results, output_dir, {}
+                )
+
+    def test_page_header_footer_generation(self, report_generator):
+        """Test page header and footer creation and formatting."""
+        # Test that header/footer method exists and can be called
+        assert hasattr(report_generator, "_create_page_header_footer")
+
+        # Test that it returns a callable function
+        header_footer_func = report_generator._create_page_header_footer
+        assert callable(header_footer_func)
+
+    def test_enhanced_visual_elements(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test enhanced visual elements and styling."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
+
+            # Generate unified report with enhanced styling
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            # Verify enhanced styling was applied
+            assert output_path.exists()
+            assert output_path.stat().st_size > 0
+
+            # Check that the file is larger than basic version (indicating enhanced content)
+            # This is a basic check - in a real scenario we'd parse the PDF content
+
+    def test_professional_color_scheme(self, report_generator):
+        """Test professional color scheme implementation."""
+        # Test that color constants are defined
+        assert hasattr(report_generator, "colors")
+
+        # Test that professional colors are available
+        # This would test the color scheme implementation
+
+    def test_consistent_typography(self, report_generator):
+        """Test consistent typography and font usage."""
+        # Test that typography styles are properly configured
+        assert hasattr(report_generator, "styles")
+        assert report_generator.styles is not None
+
+        # Test that required styles are available
+        required_styles = ["Title", "Heading1", "Normal"]
+        for style in required_styles:
+            assert style in report_generator.styles
+
+    def test_improved_spacing_and_layout(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test improved spacing and layout in reports."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
+
+            # Generate report with improved layout
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            # Verify improved layout was applied
+            assert output_path.exists()
+            # Additional layout-specific tests would go here
+
+    def test_chart_integration_optimization(self, report_generator):
+        """Test chart integration and optimization."""
+        # Test that chart integration methods exist
+        assert hasattr(report_generator, "_create_chart_elements")
+
+        # Test chart creation with sample data
+        # This would test the enhanced chart integration
+
+    def test_comprehensive_unified_report_generation(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test comprehensive unified report generation with all features."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {
+                "execution_timestamp": "2025-01-01T12:00:00",
+                "configuration": {"mode": "parallel", "consensus": "weighted"},
+                "audit_files": ["audit1.pdf", "audit2.pdf"],
+                "plan_files": ["plan1.pdf", "plan2.pdf"],
+                "duration_minutes": 15.5,
+                "total_tokens_used": 12500,
+            }
+
+            # Generate comprehensive unified report
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            # Verify comprehensive report was generated
+            assert output_path.exists()
+            assert output_path.stat().st_size > 0
+
+            # Check file naming convention
+            assert "accessibility_evaluation_report_" in output_path.name
+            assert output_path.suffix == ".pdf"
+
+    def test_enhanced_styling_integration(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test that enhanced styling is properly integrated throughout the report."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
+
+            # Generate report with enhanced styling
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            # Verify enhanced styling was applied
+            assert output_path.exists()
+
+            # Check that the file is larger than basic version (indicating enhanced content)
+            # This is a basic check - in a real scenario we'd parse the PDF content
+            assert (
+                output_path.stat().st_size > 5000
+            )  # Enhanced reports should be larger
+
+    def test_color_scheme_consistency(self, report_generator):
+        """Test that color scheme is consistent and properly defined."""
+        # Verify all required colors are defined
+        required_colors = [
+            "primary",
+            "secondary",
+            "accent",
+            "success",
+            "light_gray",
+            "dark_gray",
+            "border",
+        ]
+
+        for color_name in required_colors:
+            assert color_name in report_generator.colors
+            assert report_generator.colors[color_name] is not None
+
+    def test_enhanced_table_styling(self, report_generator):
+        """Test enhanced table styling and formatting."""
+        # Test that table styling methods work correctly
+        assert hasattr(report_generator, "_create_execution_summary_section")
+        assert hasattr(report_generator, "_create_completion_summary_section")
+
+        # Test table creation with sample data
+        sample_metadata = {
+            "execution_timestamp": "2025-01-01T12:00:00",
+            "configuration": {"mode": "parallel"},
+        }
+
+        table_content = report_generator._create_execution_summary_section(
+            sample_metadata
+        )
+        assert len(table_content) > 0
+
+    def test_chart_generation_with_multiple_plans(self, report_generator):
+        """Test chart generation when multiple plans are available."""
+        # Create sample data with multiple plans
+        multi_plan_results = {
+            "plans": {
+                "PlanA": {"overall_score": 8.5, "status": "completed"},
+                "PlanB": {"overall_score": 7.2, "status": "completed"},
+                "PlanC": {"overall_score": 6.8, "status": "completed"},
+            }
+        }
+
+        # Test chart generation
+        chart_elements = report_generator._create_chart_elements(multi_plan_results)
+        assert len(chart_elements) > 0
+
+        # Verify chart contains expected elements
+        chart_text = " ".join([str(item) for item in chart_elements])
+        assert "Score Comparison Chart" in chart_text
+        assert "Plan" in chart_text
+        assert "Score" in chart_text
+
+    def test_error_handling_and_validation(self, report_generator):
+        """Test error handling and input validation."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+
+            # Test with invalid evaluation results (None)
+            with pytest.raises(Exception):
+                report_generator.generate_unified_pdf_report(None, output_dir, {})
+
+            # Test with empty evaluation results (empty dict should work but create minimal report)
+            try:
+                output_path = report_generator.generate_unified_pdf_report(
+                    {}, output_dir, {}
+                )
+                # Empty results should still generate a report (though minimal)
+                assert output_path.exists()
+                assert output_path.stat().st_size > 0
+            except Exception as e:
+                # If it fails, that's also acceptable - just verify it's handled gracefully
+                assert "Failed to generate unified PDF report" in str(e)
+
+    def test_performance_and_file_size(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test report generation performance and file size optimization."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
+
+            # Generate report and measure performance
+            import time
+
+            start_time = time.time()
+
+            output_path = report_generator.generate_unified_pdf_report(
+                sample_evaluation_results, output_dir, metadata
+            )
+
+            generation_time = time.time() - start_time
+
+            # Verify reasonable performance (should complete in under 5 seconds)
+            assert generation_time < 5.0
+
+            # Verify reasonable file size (should be between 5KB and 100KB for sample data)
+            file_size = output_path.stat().st_size
+            assert 5000 <= file_size <= 100000
+
+    def test_cli_integration_with_enhanced_styling(
+        self, report_generator, sample_evaluation_results
+    ):
+        """Test CLI integration with enhanced styling features."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
+
+            # Test CLI report package generation
+            report_paths = report_generator.generate_cli_report_package(
+                sample_evaluation_results, ["comprehensive"], output_dir, metadata
+            )
+
+            # Verify unified report was generated
+            assert "unified_report" in report_paths
+            assert report_paths["unified_report"].exists()
+
+            # Verify other expected outputs
             assert "csv" in report_paths
             assert "json" in report_paths

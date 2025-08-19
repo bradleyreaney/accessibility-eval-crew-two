@@ -15,7 +15,7 @@ References:
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from crewai import Crew, Process
+from crewai import Crew, Process, Task
 
 from ..agents.analysis_agent import AnalysisAgent
 from ..agents.judge_agent import PrimaryJudgeAgent, SecondaryJudgeAgent
@@ -109,9 +109,11 @@ class AccessibilityEvaluationCrew:
             # Check secondary judge (uses OpenAI)
             availability["secondary_judge"] = llm_availability.get("openai", True)
 
-            # Check analysis agents (can use either LLM)
-            availability["comparison_agent"] = any(llm_availability.values())
-            availability["synthesis_agent"] = any(llm_availability.values())
+            # Check analysis agents (can use either LLM, prefer OpenAI but fallback to Gemini)
+            gemini_available = llm_availability.get("gemini", True)
+            openai_available = llm_availability.get("openai", True)
+            availability["comparison_agent"] = gemini_available or openai_available
+            availability["synthesis_agent"] = gemini_available or openai_available
         else:
             # If no resilience manager, assume all agents are available
             availability = {
@@ -215,6 +217,7 @@ class AccessibilityEvaluationCrew:
         # Phase 1: Individual Plan Evaluations
         print("📋 Phase 1: Evaluating individual remediation plans...")
         evaluation_results = self._execute_individual_evaluations(evaluation_input)
+        # evaluation_results is a list of task results from CrewAI kickoff()
         results["individual_evaluations"] = evaluation_results
         print("✅ Individual evaluations complete")
 
@@ -239,7 +242,7 @@ class AccessibilityEvaluationCrew:
 
     def _execute_individual_evaluations(
         self, evaluation_input: EvaluationInput
-    ) -> Dict[str, Any]:
+    ) -> List[str]:
         """
         Execute individual plan evaluations with resilience handling.
 
@@ -260,20 +263,99 @@ class AccessibilityEvaluationCrew:
             # If no judges available, create NA results
             return self._create_na_evaluation_results(evaluation_input)
 
-        # Create evaluation tasks
-        evaluation_tasks = self.task_managers[
-            "evaluation"
-        ].create_batch_evaluation_tasks(evaluation_input)
+        # Process each plan separately to collect all results
+        all_results = []
 
-        # Execute with available judges
-        evaluation_crew = Crew(
-            agents=available_judges,
-            tasks=evaluation_tasks,
-            process=Process.sequential,
-            verbose=False,
-        )
+        for plan_name, plan_content in evaluation_input.remediation_plans.items():
+            # Create tasks for this specific plan
+            plan_tasks = []
 
-        return evaluation_crew.kickoff()
+            # Create primary evaluation task if primary judge is available
+            if self.agent_availability["primary_judge"]:
+                primary_task = self.task_managers[
+                    "evaluation"
+                ].create_primary_evaluation_task(
+                    plan_name,
+                    plan_content.content,
+                    evaluation_input.audit_report.content,
+                )
+                plan_tasks.append(primary_task)
+
+            # Create secondary evaluation task if secondary judge is available
+            if self.agent_availability["secondary_judge"]:
+                secondary_task = self.task_managers[
+                    "evaluation"
+                ].create_secondary_evaluation_task(
+                    plan_name,
+                    plan_content.content,
+                    evaluation_input.audit_report.content,
+                )
+                plan_tasks.append(secondary_task)
+
+            # Execute crew for this specific plan
+            if plan_tasks:
+                try:
+                    plan_crew = Crew(
+                        agents=available_judges,
+                        tasks=plan_tasks,
+                        process=Process.sequential,
+                        verbose=False,
+                        memory=False,
+                    )
+
+                    plan_result = plan_crew.kickoff()
+                    if plan_result:
+                        all_results.append(plan_result)
+                    else:
+                        # CrewAI returned empty result, create NA result
+                        na_result = f"## Primary Evaluation: {plan_name}\n\n### Overall Assessment\n**Overall Score: NA/10**\n\n**Status:** NA\n**Reason:** CrewAI execution returned empty result\n\n**Timestamp:** {datetime.now().isoformat()}"
+                        all_results.append(na_result)
+                except Exception as e:
+                    print(f"⚠️  Evaluation failed for {plan_name}: {str(e)}")
+                    # Create NA result for failed evaluation
+                    na_result = f"## Primary Evaluation: {plan_name}\n\n### Overall Assessment\n**Overall Score: NA/10**\n\n**Status:** Failed\n**Reason:** {str(e)}\n\n**Timestamp:** {datetime.now().isoformat()}"
+                    all_results.append(na_result)
+
+        return all_results
+
+    def _create_evaluation_tasks_for_available_agents(
+        self, evaluation_input: EvaluationInput
+    ) -> List[Task]:
+        """
+        Create evaluation tasks only for available agents.
+
+        Args:
+            evaluation_input: The evaluation input
+
+        Returns:
+            List of tasks for available agents only
+        """
+        tasks = []
+
+        for plan_name, plan_content in evaluation_input.remediation_plans.items():
+            # Create primary evaluation task if primary judge is available
+            if self.agent_availability["primary_judge"]:
+                primary_task = self.task_managers[
+                    "evaluation"
+                ].create_primary_evaluation_task(
+                    plan_name,
+                    plan_content.content,
+                    evaluation_input.audit_report.content,
+                )
+                tasks.append(primary_task)
+
+            # Create secondary evaluation task if secondary judge is available
+            if self.agent_availability["secondary_judge"]:
+                secondary_task = self.task_managers[
+                    "evaluation"
+                ].create_secondary_evaluation_task(
+                    plan_name,
+                    plan_content.content,
+                    evaluation_input.audit_report.content,
+                )
+                tasks.append(secondary_task)
+
+        return tasks
 
     def _execute_cross_plan_comparison(
         self, evaluation_input: EvaluationInput, evaluation_results: Dict[str, Any]
@@ -301,14 +383,23 @@ class AccessibilityEvaluationCrew:
             sample_evaluations, evaluation_input.audit_report.content
         )
 
-        comparison_crew = Crew(
-            agents=[self.agents["comparison_agent"].agent],
-            tasks=[comparison_task],
-            process=Process.sequential,
-            verbose=False,
-        )
+        try:
+            comparison_crew = Crew(
+                agents=[self.agents["comparison_agent"].agent],
+                tasks=[comparison_task],
+                process=Process.sequential,
+                verbose=False,
+                memory=False,
+            )
 
-        return comparison_crew.kickoff()
+            result = comparison_crew.kickoff()
+            if result:
+                return result
+            else:
+                return {"status": "NA", "reason": "CrewAI returned empty result"}
+        except Exception as e:
+            print(f"⚠️  Cross-plan comparison failed: {str(e)}")
+            return {"status": "failed", "reason": f"Comparison error: {str(e)}"}
 
     def _execute_plan_synthesis(
         self,
@@ -342,18 +433,27 @@ class AccessibilityEvaluationCrew:
             evaluation_input.audit_report.content,
         )
 
-        synthesis_crew = Crew(
-            agents=[self.agents["synthesis_agent"].agent],
-            tasks=[synthesis_task],
-            process=Process.sequential,
-            verbose=False,
-        )
+        try:
+            synthesis_crew = Crew(
+                agents=[self.agents["synthesis_agent"].agent],
+                tasks=[synthesis_task],
+                process=Process.sequential,
+                verbose=False,
+                memory=False,
+            )
 
-        return synthesis_crew.kickoff()
+            result = synthesis_crew.kickoff()
+            if result:
+                return result
+            else:
+                return {"status": "NA", "reason": "CrewAI returned empty result"}
+        except Exception as e:
+            print(f"⚠️  Plan synthesis failed: {str(e)}")
+            return {"status": "failed", "reason": f"Synthesis error: {str(e)}"}
 
     def _create_na_evaluation_results(
         self, evaluation_input: EvaluationInput
-    ) -> Dict[str, Any]:
+    ) -> List[str]:
         """
         Create NA (Not Available) evaluation results when no agents are available.
 
@@ -363,14 +463,10 @@ class AccessibilityEvaluationCrew:
         Returns:
             NA evaluation results
         """
-        na_results = {}
+        na_results = []
         for plan_name in evaluation_input.remediation_plans.keys():
-            na_results[plan_name] = {
-                "status": "NA",
-                "reason": "No evaluation agents available",
-                "evaluation_content": None,
-                "timestamp": datetime.now().isoformat(),
-            }
+            na_result = f"## Primary Evaluation: {plan_name}\n\n### Overall Assessment\n**Overall Score: NA/10**\n\n**Status:** NA\n**Reason:** No evaluation agents available\n\n**Timestamp:** {datetime.now().isoformat()}"
+            na_results.append(na_result)
         return na_results
 
     def execute_parallel_evaluation(
@@ -395,21 +491,36 @@ class AccessibilityEvaluationCrew:
             "evaluation"
         ].create_batch_evaluation_tasks(evaluation_input)
 
-        # Create crew with all agents for parallel processing
-        parallel_crew = Crew(
-            agents=[
-                self.agents["primary_judge"].agent,
-                self.agents["secondary_judge"].agent,
-            ],
-            tasks=evaluation_tasks,
-            process=Process.sequential,  # Use sequential as parallel not available
-            verbose=False,  # Disable verbose to reduce callback warnings
-        )
+        # Create crew with only available agents for parallel processing
+        available_agents = []
+        if self.agent_availability["primary_judge"]:
+            available_agents.append(self.agents["primary_judge"].agent)
+        if self.agent_availability["secondary_judge"]:
+            available_agents.append(self.agents["secondary_judge"].agent)
 
-        results = parallel_crew.kickoff()
-        print("⚡ Parallel evaluation workflow complete!")
+        if not available_agents:
+            print("❌ No evaluation agents available")
+            return {"status": "failed", "reason": "No evaluation agents available"}
 
-        return {"parallel_results": results}
+        try:
+            parallel_crew = Crew(
+                agents=available_agents,
+                tasks=evaluation_tasks,
+                process=Process.sequential,  # Use sequential as parallel not available
+                verbose=False,  # Disable verbose to reduce callback warnings
+                memory=False,
+            )
+
+            results = parallel_crew.kickoff()
+            if results:
+                print("⚡ Parallel evaluation workflow complete!")
+                return {"parallel_results": results}
+            else:
+                print("⚠️  Parallel evaluation returned empty results")
+                return {"status": "failed", "reason": "CrewAI returned empty results"}
+        except Exception as e:
+            print(f"❌ Parallel evaluation failed: {str(e)}")
+            return {"status": "failed", "reason": f"Evaluation error: {str(e)}"}
 
     def _create_sample_evaluations(
         self, evaluation_input: EvaluationInput

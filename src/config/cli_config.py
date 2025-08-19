@@ -145,7 +145,7 @@ class CLIConfiguration:
             logger.warning(f"Long timeout specified: {self.args.timeout} seconds")
 
         # Validate mode
-        valid_modes = ["sequential", "parallel"]
+        valid_modes = ["single", "sequential", "parallel"]
         if self.args.mode not in valid_modes:
             error_msg = f"Invalid execution mode: {self.args.mode}"
             self.validation_errors.append(error_msg)
@@ -163,29 +163,23 @@ class CLIConfiguration:
             bool: True if report configuration is valid, False otherwise
         """
         valid_types = {
-            "comprehensive",
-            "executive",
+            "basic",
             "detailed",
-            "comparative",
-            "synthesis",
-            "judge_agreement",
-            "execution_summary",
+            "comprehensive",
         }
 
         try:
-            requested_types = [t.strip().lower() for t in self.args.reports.split(",")]
-            invalid_types = set(requested_types) - valid_types
-
-            if invalid_types:
+            requested_type = self.args.reports.lower()
+            if requested_type not in valid_types:
                 error_msg = (
-                    f"Invalid report types: {', '.join(invalid_types)}. "
+                    f"Invalid report type: {requested_type}. "
                     f"Valid types: {', '.join(sorted(valid_types))}"
                 )
                 self.validation_errors.append(error_msg)
                 logger.error(error_msg)
                 return False
 
-            logger.debug(f"Report types validated: {', '.join(requested_types)}")
+            logger.debug(f"Report type validated: {requested_type}")
             return True
 
         except Exception as e:

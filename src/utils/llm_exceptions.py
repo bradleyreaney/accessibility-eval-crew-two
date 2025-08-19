@@ -106,6 +106,10 @@ def classify_llm_error(error: Exception, llm_type: str) -> LLMError:
     Returns:
         Appropriate LLMError subclass instance
     """
+    # If the error is already an LLMError, return it directly
+    if isinstance(error, LLMError):
+        return error
+
     error_str = str(error).lower()
 
     # Check for timeout errors

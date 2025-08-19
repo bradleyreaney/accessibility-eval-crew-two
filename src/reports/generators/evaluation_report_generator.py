@@ -62,6 +62,17 @@ class EvaluationReportGenerator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.styles = getSampleStyleSheet()
 
+        # Initialize professional color scheme
+        self.colors = {
+            "primary": colors.HexColor("#2E86AB"),  # Professional blue
+            "secondary": colors.HexColor("#A23B72"),  # Professional purple
+            "accent": colors.HexColor("#F18F01"),  # Professional orange
+            "success": colors.HexColor("#C73E1D"),  # Professional red
+            "light_gray": colors.HexColor("#F8F9FA"),  # Light background
+            "dark_gray": colors.HexColor("#343A40"),  # Dark text
+            "border": colors.HexColor("#DEE2E6"),  # Border color
+        }
+
     def generate_pdf_report(
         self,
         evaluation_results: Dict[str, Any],
@@ -136,6 +147,417 @@ class EvaluationReportGenerator:
             # Fallback to simple text report
             fallback_path = self._generate_text_report(evaluation_results, output_path)
             return fallback_path
+
+    def generate_unified_pdf_report(
+        self,
+        evaluation_results: Dict[str, Any],
+        output_dir: Path,
+        metadata: Dict[str, Any],
+    ) -> Path:
+        """
+        Generate a single unified PDF report containing all sections.
+
+        Args:
+            evaluation_results: Results from evaluation process
+            output_dir: Output directory for the report
+            metadata: Execution metadata
+
+        Returns:
+            Path to the generated unified PDF report
+        """
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = (
+                output_dir / f"accessibility_evaluation_report_{timestamp}.pdf"
+            )
+
+            # Create document with professional styling
+            doc = SimpleDocTemplate(
+                str(output_path),
+                pagesize=A4,
+                rightMargin=72,
+                leftMargin=72,
+                topMargin=72,
+                bottomMargin=72,
+            )
+
+            # Note: Header and footer integration requires custom canvas maker
+            # For now, we'll build without headers/footers to ensure functionality
+
+            # Build story with all sections
+            story = []
+
+            # 1. Title Page
+            story.extend(self._create_title_page(evaluation_results, "Unified Report"))
+            story.append(PageBreak())
+
+            # 2. Table of Contents
+            story.extend(self._create_table_of_contents())
+            story.append(PageBreak())
+
+            # 3. Executive Summary
+            story.extend(self._create_executive_summary(evaluation_results))
+            story.append(PageBreak())
+
+            # 4. Execution Summary Section
+            story.extend(self._create_execution_summary_section(metadata))
+            story.append(PageBreak())
+
+            # 5. Completion Summary Section
+            story.extend(self._create_completion_summary_section(evaluation_results))
+            story.append(PageBreak())
+
+            # 6. Detailed Analysis
+            story.extend(self._create_detailed_analysis(evaluation_results))
+            story.append(PageBreak())
+
+            # 7. Scoring Overview
+            story.extend(self._create_scoring_overview(evaluation_results))
+            story.append(PageBreak())
+
+            # 7.5. Enhanced Charts (if available)
+            chart_elements = self._create_chart_elements(evaluation_results)
+            if chart_elements:
+                story.extend(chart_elements)
+                story.append(PageBreak())
+
+            # 8. Recommendations/Synthesis
+            if evaluation_results.get("synthesis"):
+                story.extend(self._create_synthesis_section(evaluation_results))
+            else:
+                story.extend(self._create_recommendations_section(evaluation_results))
+
+            # Build PDF
+            doc.build(story)
+            return output_path
+
+        except Exception as e:
+            raise Exception(f"Failed to generate unified PDF report: {e}")
+
+    def _create_page_header_footer(self, canvas, doc):
+        """Add professional headers and footers to each page."""
+        # Header
+        canvas.saveState()
+        canvas.setFont("Helvetica-Bold", 9)
+        canvas.setFillColor(self.colors["primary"])
+        canvas.drawString(72, 800, "Accessibility Evaluation Report")
+
+        # Add a subtle line under the header
+        canvas.setStrokeColor(self.colors["border"])
+        canvas.setLineWidth(0.5)
+        canvas.line(72, 795, 522, 795)
+
+        # Footer
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(self.colors["dark_gray"])
+        canvas.drawString(
+            72, 50, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        canvas.drawRightString(522, 50, f"Page {doc.page}")
+
+        # Add a subtle line above the footer
+        canvas.setLineWidth(0.5)
+        canvas.line(72, 55, 522, 55)
+
+        canvas.restoreState()
+
+    def _create_table_of_contents(self) -> List:
+        """
+        Create professional table of contents for unified report.
+
+        Returns:
+            List of ReportLab elements for table of contents
+        """
+        story = []
+
+        # Title with enhanced styling
+        title_style = getSampleStyleSheet()["Title"]
+        title_style.textColor = self.colors["primary"]
+        story.append(Paragraph("Table of Contents", title_style))
+        story.append(Spacer(1, 20))
+
+        # TOC entries with enhanced styling
+        toc_style = getSampleStyleSheet()["Normal"]
+        toc_style.textColor = self.colors["dark_gray"]
+        toc_style.fontSize = 11
+        toc_style.leading = 16
+
+        toc_entries = [
+            "Executive Summary",
+            "Execution Summary",
+            "Completion Summary",
+            "Detailed Analysis",
+            "Scoring Overview",
+            "Recommendations",
+        ]
+
+        for i, entry in enumerate(toc_entries, 1):
+            # Create styled TOC entry with page number placeholder
+            toc_text = f"<b>{i}.</b> {entry}"
+            story.append(Paragraph(toc_text, toc_style))
+            story.append(Spacer(1, 4))
+
+        # Add a subtle divider
+        story.append(Spacer(1, 10))
+        divider = Table(
+            [[""]],
+            colWidths=[400],
+            style=[("LINEBELOW", (0, 0), (-1, 0), 0.5, self.colors["border"])],
+        )
+        story.append(divider)
+
+        return story
+
+    def _create_execution_summary_section(self, metadata: Dict[str, Any]) -> List:
+        """
+        Create execution summary section for unified report.
+
+        Args:
+            metadata: Execution metadata
+
+        Returns:
+            List of ReportLab elements for execution summary
+        """
+        story = []
+
+        # Section title
+        title_style = getSampleStyleSheet()["Heading1"]
+        story.append(Paragraph("Execution Summary", title_style))
+        story.append(Spacer(1, 12))
+
+        # Metadata table with enhanced styling
+        normal_style = getSampleStyleSheet()["Normal"]
+
+        # Create metadata table
+        metadata_rows = []
+        for key, value in metadata.items():
+            if isinstance(value, dict):
+                # Handle nested metadata
+                for sub_key, sub_value in value.items():
+                    metadata_rows.append([f"{key}.{sub_key}", str(sub_value)])
+            else:
+                metadata_rows.append([key, str(value)])
+
+        if metadata_rows:
+            table = Table(metadata_rows, colWidths=[200, 300])
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), self.colors["primary"]),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 11),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                        ("BACKGROUND", (0, 1), (-1, -1), self.colors["light_gray"]),
+                        ("GRID", (0, 0), (-1, -1), 0.5, self.colors["border"]),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, self.colors["light_gray"]],
+                        ),
+                        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                        ("FONTSIZE", (0, 1), (-1, -1), 10),
+                        ("TOPPADDING", (0, 0), (-1, -1), 8),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                    ]
+                )
+            )
+            story.append(table)
+        else:
+            story.append(Paragraph("No execution metadata available", normal_style))
+
+        return story
+
+    def _create_completion_summary_section(
+        self, evaluation_results: Dict[str, Any]
+    ) -> List:
+        """
+        Create completion summary section for unified report.
+
+        Args:
+            evaluation_results: Evaluation results
+
+        Returns:
+            List of ReportLab elements for completion summary
+        """
+        story = []
+
+        # Section title
+        title_style = getSampleStyleSheet()["Heading1"]
+        story.append(Paragraph("Completion Summary", title_style))
+        story.append(Spacer(1, 12))
+
+        normal_style = getSampleStyleSheet()["Normal"]
+
+        # Calculate completion statistics
+        plans = evaluation_results.get("plans", {})
+        total_plans = len(plans)
+        completed_plans = sum(
+            1 for plan in plans.values() if plan.get("status") == "completed"
+        )
+        na_plans = sum(1 for plan in plans.values() if plan.get("status") == "NA")
+
+        completion_pct = (completed_plans / total_plans * 100) if total_plans > 0 else 0
+
+        # Create completion summary
+        summary_text = f"""
+        <b>Total Plans:</b> {total_plans}<br/>
+        <b>Completed Evaluations:</b> {completed_plans}<br/>
+        <b>NA Evaluations:</b> {na_plans}<br/>
+        <b>Completion Rate:</b> {completion_pct:.1f}%
+        """
+
+        story.append(Paragraph(summary_text, normal_style))
+        story.append(Spacer(1, 12))
+
+        # Add resilience information if available
+        if "resilience_info" in evaluation_results:
+            resilience_info = evaluation_results["resilience_info"]
+            if resilience_info.get("partial_evaluation"):
+                story.append(
+                    Paragraph(
+                        "<b>Note:</b> This evaluation was completed with partial LLM availability.",
+                        normal_style,
+                    )
+                )
+                story.append(Spacer(1, 8))
+
+        return story
+
+    def _create_recommendations_section(
+        self, evaluation_results: Dict[str, Any]
+    ) -> List:
+        """
+        Create recommendations section for unified report.
+
+        Args:
+            evaluation_results: Evaluation results
+
+        Returns:
+            List of ReportLab elements for recommendations
+        """
+        story = []
+
+        # Section title
+        title_style = getSampleStyleSheet()["Heading1"]
+        story.append(Paragraph("Recommendations", title_style))
+        story.append(Spacer(1, 12))
+
+        normal_style = getSampleStyleSheet()["Normal"]
+
+        # Create recommendations based on evaluation results
+        plans = evaluation_results.get("plans", {})
+        if plans:
+            # Sort plans by score if available
+            scored_plans = []
+            for plan_name, plan_data in plans.items():
+                if (
+                    plan_data.get("status") == "completed"
+                    and "overall_score" in plan_data
+                ):
+                    scored_plans.append((plan_name, plan_data["overall_score"]))
+
+            if scored_plans:
+                scored_plans.sort(key=lambda x: x[1], reverse=True)
+
+                story.append(Paragraph("<b>Top Recommendations:</b>", normal_style))
+                story.append(Spacer(1, 8))
+
+                for i, (plan_name, score) in enumerate(scored_plans[:3], 1):
+                    story.append(
+                        Paragraph(
+                            f"{i}. <b>{plan_name}</b> (Score: {score}/10)", normal_style
+                        )
+                    )
+                    story.append(Spacer(1, 4))
+            else:
+                story.append(
+                    Paragraph(
+                        "No scored plans available for recommendations.", normal_style
+                    )
+                )
+        else:
+            story.append(
+                Paragraph(
+                    "No evaluation results available for recommendations.", normal_style
+                )
+            )
+
+        return story
+
+    def _create_chart_elements(self, evaluation_results: Dict[str, Any]) -> List:
+        """
+        Create enhanced chart elements for the report.
+
+        Args:
+            evaluation_results: Evaluation results
+
+        Returns:
+            List of ReportLab elements for charts
+        """
+        story = []
+
+        # Create a scoring comparison chart
+        plans = evaluation_results.get("plans", {})
+        if plans and len(plans) > 1:
+            # Extract scores for chart
+            plan_names = []
+            plan_scores = []
+
+            for plan_name, plan_data in plans.items():
+                if (
+                    plan_data.get("status") == "completed"
+                    and "overall_score" in plan_data
+                ):
+                    plan_names.append(plan_name)
+                    plan_scores.append(plan_data["overall_score"])
+
+            if len(plan_scores) > 1:
+                # Create a simple bar chart representation using tables
+                story.append(Spacer(1, 12))
+
+                # Chart title
+                chart_title_style = getSampleStyleSheet()["Heading2"]
+                chart_title_style.textColor = self.colors["secondary"]
+                story.append(Paragraph("Score Comparison Chart", chart_title_style))
+                story.append(Spacer(1, 8))
+
+                # Create chart table
+                chart_data = []
+                chart_data.append(["Plan", "Score", "Visual"])
+
+                for name, score in zip(plan_names, plan_scores):
+                    # Create a visual bar representation
+                    bar_length = int((score / 10) * 20)  # Scale to 20 characters
+                    bar = "█" * bar_length
+                    chart_data.append([name, f"{score}/10", bar])
+
+                chart_table = Table(chart_data, colWidths=[150, 80, 200])
+                chart_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), self.colors["secondary"]),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, 0), 10),
+                            ("GRID", (0, 0), (-1, -1), 0.5, self.colors["border"]),
+                            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                            ("FONTSIZE", (0, 1), (-1, -1), 9),
+                            ("TOPPADDING", (0, 0), (-1, -1), 6),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                        ]
+                    )
+                )
+
+                story.append(chart_table)
+                story.append(Spacer(1, 12))
+
+        return story
 
     def _create_title_page(self, results: Dict[str, Any], report_type: str) -> List:
         """Create the title page content"""
@@ -263,7 +685,10 @@ class EvaluationReportGenerator:
         content.append(Paragraph("Executive Summary", self.styles["Heading1"]))
         content.append(Spacer(1, 0.3 * inch))
 
-        plans = results.get("plans", {})
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
+        plans = results.get("individual_evaluations", {})
+        if not plans:
+            plans = results.get("plans", {})
         resilience_info = results.get("resilience_info", {})
 
         if plans:
@@ -324,7 +749,10 @@ class EvaluationReportGenerator:
         content.append(Paragraph("Scoring Overview", self.styles["Heading1"]))
         content.append(Spacer(1, 0.3 * inch))
 
-        plans = results.get("plans", {})
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
+        plans = results.get("individual_evaluations", {})
+        if not plans:
+            plans = results.get("plans", {})
         if plans:
             # Create scoring table
             data = [
@@ -420,7 +848,7 @@ class EvaluationReportGenerator:
         content.append(Paragraph("Detailed Plan Analysis", self.styles["Heading1"]))
         content.append(Spacer(1, 0.3 * inch))
 
-        plans = results.get("plans", {})
+        plans = results.get("individual_evaluations", {})
         for plan_name, plan_data in plans.items():
             # Plan title
             content.append(Paragraph(f"Plan: {plan_name}", self.styles["Heading2"]))
@@ -560,7 +988,7 @@ SCORING RESULTS
 {'=' * 20}
 """
 
-        plans = results.get("plans", {})
+        plans = results.get("individual_evaluations", {})
         for plan_name, plan_data in plans.items():
             content += f"""
 Plan: {plan_name}
@@ -592,7 +1020,10 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             output_path = self.output_dir / f"evaluation_scores_{timestamp}.csv"
 
         # Create CSV data
-        plans = evaluation_results.get("plans", {})
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
+        plans = evaluation_results.get("individual_evaluations", {})
+        if not plans:
+            plans = evaluation_results.get("plans", {})
         data = []
 
         for plan_name, plan_data in plans.items():
@@ -652,7 +1083,11 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
         Returns:
             Dictionary containing completion statistics
         """
-        plans = evaluation_results.get("plans", {})
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
+        plans = evaluation_results.get("individual_evaluations", {})
+        if not plans:
+            plans = evaluation_results.get("plans", {})
+
         resilience_info = evaluation_results.get("resilience_info", {})
 
         # Count different statuses
@@ -849,12 +1284,17 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             output_path = self.output_dir / f"evaluation_results_{timestamp}.json"
 
         # Create export data with metadata and resilience information
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
+        plans = evaluation_results.get("individual_evaluations", {})
+        if not plans:
+            plans = evaluation_results.get("plans", {})
+
         export_data = {
             "metadata": {
                 "exported_at": datetime.now().isoformat(),
                 "export_type": "evaluation_results",
                 "version": "1.0",
-                "plans_count": len(evaluation_results.get("plans", {})),
+                "plans_count": len(plans),
             },
             "evaluation_results": evaluation_results,
         }
@@ -978,56 +1418,11 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         try:
-            # Generate execution summary first (always included)
-            exec_summary_path = output_dir / f"execution_summary_{timestamp}.pdf"
-            report_paths["execution_summary"] = self.create_execution_summary_report(
-                evaluation_results, metadata, exec_summary_path
+            # Generate unified PDF report (replaces three individual PDFs)
+            unified_report_path = self.generate_unified_pdf_report(
+                evaluation_results, output_dir, metadata
             )
-
-            # Generate completion summary (always included for resilience features)
-            completion_summary_path = output_dir / f"completion_summary_{timestamp}.pdf"
-            report_paths["completion_summary"] = (
-                self.generate_completion_summary_report(
-                    evaluation_results, completion_summary_path
-                )
-            )
-
-            # Generate requested report types
-            for report_type in report_types:
-                if report_type == "comprehensive":
-                    report_paths[report_type] = self.generate_pdf_report(
-                        evaluation_results,
-                        output_path=output_dir
-                        / f"comprehensive_report_{timestamp}.pdf",
-                        report_type="comprehensive",
-                    )
-                elif report_type == "executive":
-                    report_paths[report_type] = self._generate_executive_summary(
-                        evaluation_results,
-                        output_dir / f"executive_summary_{timestamp}.pdf",
-                    )
-                elif report_type == "detailed":
-                    report_paths[report_type] = self._generate_detailed_analysis(
-                        evaluation_results,
-                        output_dir / f"detailed_analysis_{timestamp}.pdf",
-                    )
-                elif report_type == "comparative":
-                    report_paths[report_type] = self._generate_comparison_analysis(
-                        evaluation_results,
-                        output_dir / f"comparison_analysis_{timestamp}.pdf",
-                    )
-                elif report_type == "synthesis":
-                    report_paths[report_type] = (
-                        self._generate_synthesis_recommendations(
-                            evaluation_results,
-                            output_dir / f"synthesis_recommendations_{timestamp}.pdf",
-                        )
-                    )
-                elif report_type == "judge_agreement":
-                    report_paths[report_type] = self._generate_judge_agreement_analysis(
-                        evaluation_results,
-                        output_dir / f"judge_agreement_{timestamp}.pdf",
-                    )
+            report_paths["unified_report"] = unified_report_path
 
             # Always generate data exports
             report_paths["csv"] = self.generate_csv_export(
@@ -1041,6 +1436,212 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             raise Exception(f"Failed to generate CLI report package: {e}")
 
         return report_paths
+
+    def _add_execution_configuration_section(
+        self, story: List, execution_metadata: Dict[str, Any]
+    ) -> None:
+        """Add execution configuration section to the story."""
+        story.append(Paragraph("Execution Configuration", self.styles["Heading2"]))
+
+        config = execution_metadata.get("configuration", {})
+        metadata_items = [
+            (
+                "Execution Time",
+                execution_metadata.get("execution_timestamp", "Unknown"),
+            ),
+            (
+                "Duration",
+                f"{execution_metadata.get('duration_minutes', 0):.1f} minutes",
+            ),
+            ("Mode", config.get("execution_mode", "Unknown")),
+            (
+                "Consensus Enabled",
+                "Yes" if config.get("consensus_enabled") else "No",
+            ),
+            ("Audit Directory", config.get("audit_dir", "Unknown")),
+            ("Plans Directory", config.get("plans_dir", "Unknown")),
+            ("Output Directory", config.get("output_dir", "Unknown")),
+            ("Report Types", config.get("report_types", "Unknown")),
+        ]
+
+        for label, value in metadata_items:
+            story.append(Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"]))
+            story.append(Spacer(1, 0.1 * inch))
+
+    def _add_file_processing_summary_section(
+        self, story: List, execution_metadata: Dict[str, Any]
+    ) -> None:
+        """Add file processing summary section to the story."""
+        story.append(Paragraph("File Processing Summary", self.styles["Heading2"]))
+
+        audit_files = execution_metadata.get("audit_files", [])
+        plan_files = execution_metadata.get("plan_files", [])
+
+        story.append(
+            Paragraph(
+                f"<b>Audit Reports Processed:</b> {len(audit_files)}",
+                self.styles["Normal"],
+            )
+        )
+        for file_name in audit_files:
+            story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
+
+        story.append(Spacer(1, 0.2 * inch))
+        story.append(
+            Paragraph(
+                f"<b>Remediation Plans Processed:</b> {len(plan_files)}",
+                self.styles["Normal"],
+            )
+        )
+        for file_name in plan_files:
+            story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
+
+    def _add_results_summary_section(
+        self, story: List, evaluation_results: Dict[str, Any]
+    ) -> None:
+        """Add results summary section to the story."""
+        story.append(Paragraph("Results Summary", self.styles["Heading2"]))
+
+        # Check if we have any evaluation results
+        has_results = (
+            evaluation_results.get("individual_evaluations")
+            and len(evaluation_results["individual_evaluations"]) > 0
+        )
+
+        if has_results:
+            self._add_successful_results_summary(story, evaluation_results)
+        else:
+            self._add_no_results_summary(story, evaluation_results)
+
+    def _add_successful_results_summary(
+        self, story: List, evaluation_results: Dict[str, Any]
+    ) -> None:
+        """Add summary for successful evaluations."""
+        # Show synthesis plan if available
+        if evaluation_results.get("synthesis_plan"):
+            synthesis = evaluation_results["synthesis_plan"]
+            story.append(
+                Paragraph(
+                    f"<b>Recommended Plan:</b> {synthesis.get('title', 'Unknown')}",
+                    self.styles["Normal"],
+                )
+            )
+            story.append(Spacer(1, 0.1 * inch))
+
+        # Show evaluation count
+        story.append(
+            Paragraph(
+                f"<b>Plans Evaluated:</b> {len(evaluation_results['individual_evaluations'])}",
+                self.styles["Normal"],
+            )
+        )
+        story.append(Spacer(1, 0.1 * inch))
+
+        # Show completion statistics if available
+        if evaluation_results.get("resilience_stats"):
+            stats = evaluation_results["resilience_stats"].get("evaluation_stats", {})
+            if stats:
+                story.append(
+                    Paragraph(
+                        f"<b>Successful Evaluations:</b> {stats.get('successful_evaluations', 0)}",
+                        self.styles["Normal"],
+                    )
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+    def _add_no_results_summary(
+        self, story: List, evaluation_results: Dict[str, Any]
+    ) -> None:
+        """Add summary when no evaluation results are available."""
+        # No results available - show informative message
+        story.append(
+            Paragraph(
+                "<b>No Evaluation Results Available</b>",
+                self.styles["Normal"],
+            )
+        )
+        story.append(Spacer(1, 0.1 * inch))
+
+        # Show what might have happened
+        if evaluation_results.get("resilience_stats"):
+            stats = evaluation_results["resilience_stats"].get("evaluation_stats", {})
+            if stats:
+                story.append(
+                    Paragraph(
+                        f"<b>Evaluation Status:</b> {stats.get('total_evaluations', 0)} total, "
+                        f"{stats.get('successful_evaluations', 0)} successful, "
+                        f"{stats.get('failed_evaluations', 0)} failed, "
+                        f"{stats.get('na_evaluations', 0)} N/A",
+                        self.styles["Normal"],
+                    )
+                )
+                story.append(Spacer(1, 0.1 * inch))
+
+        # Show LLM availability status
+        if evaluation_results.get("resilience_stats"):
+            llm_status = evaluation_results["resilience_stats"].get(
+                "llm_availability", {}
+            )
+            if llm_status:
+                available_llms = [llm for llm, status in llm_status.items() if status]
+                unavailable_llms = [
+                    llm for llm, status in llm_status.items() if not status
+                ]
+
+                if available_llms:
+                    story.append(
+                        Paragraph(
+                            f"<b>Available LLMs:</b> {', '.join(available_llms)}",
+                            self.styles["Normal"],
+                        )
+                    )
+                    story.append(Spacer(1, 0.1 * inch))
+
+                if unavailable_llms:
+                    story.append(
+                        Paragraph(
+                            f"<b>Unavailable LLMs:</b> {', '.join(unavailable_llms)}",
+                            self.styles["Normal"],
+                        )
+                    )
+                    story.append(Spacer(1, 0.1 * inch))
+
+        story.append(
+            Paragraph(
+                "<i>Note: The evaluation may have failed due to LLM unavailability, "
+                "timeout, or other technical issues. Check the logs for more details.</i>",
+                self.styles["Normal"],
+            )
+        )
+        story.append(Spacer(1, 0.1 * inch))
+
+    def _add_system_information_section(
+        self, story: List, execution_metadata: Dict[str, Any]
+    ) -> None:
+        """Add system information section to the story."""
+        story.append(PageBreak())
+        story.append(Paragraph("System Information", self.styles["Heading2"]))
+
+        system_info = execution_metadata.get("system_info", {})
+        env_info = execution_metadata.get("environment", {})
+
+        system_items = [
+            ("Python Version", system_info.get("python_version", "Unknown")),
+            ("Platform", system_info.get("platform", "Unknown")),
+            ("Working Directory", system_info.get("cwd", "Unknown")),
+            (
+                "Google API Configured",
+                "Yes" if env_info.get("google_api_configured") else "No",
+            ),
+            (
+                "OpenAI API Configured",
+                "Yes" if env_info.get("openai_api_configured") else "No",
+            ),
+        ]
+
+        for label, value in system_items:
+            story.append(Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"]))
+            story.append(Spacer(1, 0.1 * inch))
 
     def create_execution_summary_report(
         self,
@@ -1079,113 +1680,13 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             story.append(title)
             story.append(Spacer(1, 0.5 * inch))
 
-            # Execution metadata
-            story.append(Paragraph("Execution Configuration", self.styles["Heading2"]))
-
-            config = execution_metadata.get("configuration", {})
-            metadata_items = [
-                (
-                    "Execution Time",
-                    execution_metadata.get("execution_timestamp", "Unknown"),
-                ),
-                (
-                    "Duration",
-                    f"{execution_metadata.get('duration_minutes', 0):.1f} minutes",
-                ),
-                ("Mode", config.get("execution_mode", "Unknown")),
-                (
-                    "Consensus Enabled",
-                    "Yes" if config.get("consensus_enabled") else "No",
-                ),
-                ("Audit Directory", config.get("audit_dir", "Unknown")),
-                ("Plans Directory", config.get("plans_dir", "Unknown")),
-                ("Output Directory", config.get("output_dir", "Unknown")),
-                ("Report Types", config.get("report_types", "Unknown")),
-            ]
-
-            for label, value in metadata_items:
-                story.append(
-                    Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"])
-                )
-                story.append(Spacer(1, 0.1 * inch))
-
+            # Add sections using helper methods
+            self._add_execution_configuration_section(story, execution_metadata)
             story.append(PageBreak())
-
-            # File processing summary
-            story.append(Paragraph("File Processing Summary", self.styles["Heading2"]))
-
-            audit_files = execution_metadata.get("audit_files", [])
-            plan_files = execution_metadata.get("plan_files", [])
-
-            story.append(
-                Paragraph(
-                    f"<b>Audit Reports Processed:</b> {len(audit_files)}",
-                    self.styles["Normal"],
-                )
-            )
-            for file_name in audit_files:
-                story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
-
-            story.append(Spacer(1, 0.2 * inch))
-            story.append(
-                Paragraph(
-                    f"<b>Remediation Plans Processed:</b> {len(plan_files)}",
-                    self.styles["Normal"],
-                )
-            )
-            for file_name in plan_files:
-                story.append(Paragraph(f"  • {file_name}", self.styles["Normal"]))
-
+            self._add_file_processing_summary_section(story, execution_metadata)
             story.append(PageBreak())
-
-            # Results summary
-            story.append(Paragraph("Results Summary", self.styles["Heading2"]))
-
-            if evaluation_results.get("synthesis_plan"):
-                synthesis = evaluation_results["synthesis_plan"]
-                story.append(
-                    Paragraph(
-                        f"<b>Recommended Plan:</b> {synthesis.get('title', 'Unknown')}",
-                        self.styles["Normal"],
-                    )
-                )
-                story.append(Spacer(1, 0.1 * inch))
-
-            if evaluation_results.get("plans"):
-                story.append(
-                    Paragraph(
-                        f"<b>Plans Evaluated:</b> {len(evaluation_results['plans'])}",
-                        self.styles["Normal"],
-                    )
-                )
-                story.append(Spacer(1, 0.1 * inch))
-
-            # System information
-            story.append(PageBreak())
-            story.append(Paragraph("System Information", self.styles["Heading2"]))
-
-            system_info = execution_metadata.get("system_info", {})
-            env_info = execution_metadata.get("environment", {})
-
-            system_items = [
-                ("Python Version", system_info.get("python_version", "Unknown")),
-                ("Platform", system_info.get("platform", "Unknown")),
-                ("Working Directory", system_info.get("cwd", "Unknown")),
-                (
-                    "Google API Configured",
-                    "Yes" if env_info.get("google_api_configured") else "No",
-                ),
-                (
-                    "OpenAI API Configured",
-                    "Yes" if env_info.get("openai_api_configured") else "No",
-                ),
-            ]
-
-            for label, value in system_items:
-                story.append(
-                    Paragraph(f"<b>{label}:</b> {value}", self.styles["Normal"])
-                )
-                story.append(Spacer(1, 0.1 * inch))
+            self._add_results_summary_section(story, evaluation_results)
+            self._add_system_information_section(story, execution_metadata)
 
             # Build PDF
             doc.build(story)

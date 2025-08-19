@@ -88,15 +88,50 @@ python main.py --audit-dir data/audit-reports --plans-dir data/remediation-plans
 - `--mode single|parallel|sequential` (choose evaluation mode)
 - `--timeout 30` (set timeout in seconds)
 - `--verbose` (show detailed logs including LLM status)
+- `--keep-history` (preserve previous reports instead of clearing them)
 
 ### Step 3: Review Results
 
 After completion, reports will be generated in the output directory:
-- **PDF Reports**: Executive Summary, Detailed Report, Comparative Analysis, Summary Report
+- **Unified PDF Report**: Single comprehensive report combining all sections
 - **CSV/JSON Exports**: For further analysis
-- **Completion Summary**: Shows evaluation completion statistics and LLM availability
+- **Enhanced Styling**: Professional formatting with color schemes and charts
+- **Score Comparison Charts**: Visual representation of plan rankings
+- **Professional Navigation**: Enhanced table of contents and visual hierarchy
 
 ### Step 4: Interpreting Results
+
+## 🎨 Enhanced Reporting Features
+
+The system now generates professional, unified reports with enhanced styling and visual elements:
+
+### Unified PDF Reports
+- **Single File**: One comprehensive PDF instead of three separate files
+- **Professional Formatting**: A4 size with consistent margins and typography
+- **Enhanced Navigation**: Professional table of contents with numbered sections
+- **Visual Elements**: Score comparison charts and professional tables
+
+### Professional Styling
+- **Color Scheme**: 7 professional colors for consistent branding
+- **Typography**: Consistent fonts and spacing throughout
+- **Tables**: Enhanced styling with alternating row colors
+- **Charts**: Visual score comparisons using professional design elements
+
+### Report Sections
+1. **Title Page** - Professional branding and metadata
+2. **Table of Contents** - Easy navigation with enhanced styling
+3. **Executive Summary** - High-level findings and recommendations
+4. **Execution Summary** - CLI configuration and metadata
+5. **Completion Summary** - Evaluation statistics and resilience info
+6. **Detailed Analysis** - Plan-by-plan evaluation details
+7. **Scoring Overview** - Comparative analysis and rankings
+8. **Score Charts** - Visual score comparisons (when multiple plans)
+9. **Recommendations** - Actionable next steps
+
+### Historical Data Management
+- **Automatic Cleanup**: Previous reports are automatically cleared before new runs
+- **Keep History Option**: Use `--keep-history` to preserve previous reports
+- **Clean Output**: Always start with a clean, organized output directory
 
 Open the generated PDF, CSV, or JSON files to review rankings, scores, and detailed breakdowns for each plan. All scoring criteria and methodology remain unchanged from the previous UI.
 

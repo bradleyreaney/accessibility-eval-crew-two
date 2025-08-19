@@ -79,10 +79,60 @@ def suppress_warnings():
         yield
 
     finally:
-        # Restore original warning filters
+        # Restore original warning filters safely
         warnings.resetwarnings()
         for filter_item in old_warnings:
-            warnings.filterwarnings(*filter_item)
+            try:
+                # Handle different types of filter items
+                if len(filter_item) >= 1 and filter_item[0] in (
+                    "error",
+                    "ignore",
+                    "always",
+                    "default",
+                    "module",
+                    "once",
+                ):
+                    action = filter_item[0]
+
+                    # Handle message parameter - could be string, regex, or None
+                    message = filter_item[1] if len(filter_item) > 1 else ""
+                    if message is not None and not isinstance(message, str):
+                        # Skip non-string messages (like regex objects)
+                        continue
+                    # Convert None to empty string for warnings.filterwarnings
+                    if message is None:
+                        message = ""
+
+                    # Handle other parameters with safe defaults
+                    category = (
+                        filter_item[2]
+                        if len(filter_item) > 2 and filter_item[2] is not None
+                        else Warning
+                    )
+                    module = filter_item[3] if len(filter_item) > 3 else ""
+                    if module is not None and not isinstance(module, str):
+                        # Skip non-string modules (like regex objects)
+                        continue
+                    # Convert None to empty string for warnings.filterwarnings
+                    if module is None:
+                        module = ""
+                    lineno = (
+                        filter_item[4]
+                        if len(filter_item) > 4 and filter_item[4] is not None
+                        else 0
+                    )
+                    append = (
+                        filter_item[5]
+                        if len(filter_item) > 5 and filter_item[5] is not None
+                        else False
+                    )
+
+                    warnings.filterwarnings(
+                        action, message, category, module, lineno, append
+                    )
+            except (ValueError, TypeError, IndexError):
+                # Skip invalid filter items
+                continue
         logging.getLogger().setLevel(old_level)
 
 
@@ -128,10 +178,60 @@ def suppress_all_warnings():
         yield
 
     finally:
-        # Restore warning state
+        # Restore warning state safely
         warnings.resetwarnings()
         for filter_item in old_warnings:
-            warnings.filterwarnings(*filter_item)
+            try:
+                # Handle different types of filter items
+                if len(filter_item) >= 1 and filter_item[0] in (
+                    "error",
+                    "ignore",
+                    "always",
+                    "default",
+                    "module",
+                    "once",
+                ):
+                    action = filter_item[0]
+
+                    # Handle message parameter - could be string, regex, or None
+                    message = filter_item[1] if len(filter_item) > 1 else ""
+                    if message is not None and not isinstance(message, str):
+                        # Skip non-string messages (like regex objects)
+                        continue
+                    # Convert None to empty string for warnings.filterwarnings
+                    if message is None:
+                        message = ""
+
+                    # Handle other parameters with safe defaults
+                    category = (
+                        filter_item[2]
+                        if len(filter_item) > 2 and filter_item[2] is not None
+                        else Warning
+                    )
+                    module = filter_item[3] if len(filter_item) > 3 else ""
+                    if module is not None and not isinstance(module, str):
+                        # Skip non-string modules (like regex objects)
+                        continue
+                    # Convert None to empty string for warnings.filterwarnings
+                    if module is None:
+                        module = ""
+                    lineno = (
+                        filter_item[4]
+                        if len(filter_item) > 4 and filter_item[4] is not None
+                        else 0
+                    )
+                    append = (
+                        filter_item[5]
+                        if len(filter_item) > 5 and filter_item[5] is not None
+                        else False
+                    )
+
+                    warnings.filterwarnings(
+                        action, message, category, module, lineno, append
+                    )
+            except (ValueError, TypeError, IndexError):
+                # Skip invalid filter items
+                continue
         logging.getLogger().setLevel(old_logging_level)
 
         # Re-enable loggers that we disabled

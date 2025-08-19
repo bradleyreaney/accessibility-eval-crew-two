@@ -273,10 +273,52 @@ class WorkflowController:
         else:
             evaluation_results = self.crew.execute_complete_evaluation(evaluation_input)
 
-        # Merge results
-        results.update(evaluation_results)
+        # Parse evaluation results to extract structured data
+        from ..utils.evaluation_parser import EvaluationParser
 
-        return results
+        # Debug: Print the structure of evaluation_results
+        print(f"DEBUG: evaluation_results type: {type(evaluation_results)}")
+        if isinstance(evaluation_results, dict):
+            print(f"DEBUG: evaluation_results keys: {list(evaluation_results.keys())}")
+            if "individual_evaluations" in evaluation_results:
+                print(
+                    f"DEBUG: individual_evaluations type: {type(evaluation_results['individual_evaluations'])}"
+                )
+                print(
+                    f"DEBUG: individual_evaluations length: {len(evaluation_results['individual_evaluations']) if isinstance(evaluation_results['individual_evaluations'], list) else 'not a list'}"
+                )
+        elif isinstance(evaluation_results, list):
+            print(f"DEBUG: evaluation_results length: {len(evaluation_results)}")
+            if evaluation_results:
+                print(f"DEBUG: First result type: {type(evaluation_results[0])}")
+                print(
+                    f"DEBUG: First result preview: {str(evaluation_results[0])[:200]}..."
+                )
+
+        # Handle different result formats
+        if isinstance(evaluation_results, list):
+            # CrewAI kickoff() returns a list of task results
+            parsed_evaluation_results = EvaluationParser.parse_crew_results(
+                evaluation_results
+            )
+        else:
+            # Already a dictionary
+            parsed_evaluation_results = EvaluationParser.parse_crew_results(
+                evaluation_results
+            )
+
+        # Debug: Print the parsed results
+        print(
+            f"DEBUG: parsed_evaluation_results keys: {list(parsed_evaluation_results.keys())}"
+        )
+        print(
+            f"DEBUG: individual_evaluations count: {len(parsed_evaluation_results.get('individual_evaluations', {}))}"
+        )
+
+        # Merge results, but preserve availability information
+        parsed_evaluation_results.update(results)
+
+        return parsed_evaluation_results
 
     def _update_progress(self, progress: int, phase: WorkflowPhase):
         """Update workflow progress and phase"""

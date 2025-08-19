@@ -541,15 +541,25 @@ class TestJudgeAgents:
     @patch("src.config.llm_config.LLMManager")
     def test_secondary_judge_error_handling(self, mock_llm_manager):
         """Test secondary judge error handling"""
+        # Mock both LLMs to ensure consistent behavior
         mock_llm_manager.openai = Mock()
-        mock_llm_manager.openai.invoke.side_effect = Exception("LLM error")
+        mock_llm_manager.gemini = Mock()
 
-        agent = SecondaryJudgeAgent(mock_llm_manager)
+        # Mock the LLM availability check to return OpenAI as available
+        with patch(
+            "src.utils.llm_resilience_manager.LLMResilienceManager.check_llm_availability"
+        ) as mock_availability:
+            mock_availability.return_value = {"openai": True, "gemini": False}
 
-        result = agent.evaluate_plan("TestPlan", "plan content", "audit content")
-        assert isinstance(result, dict)
-        assert result["success"] is False
-        assert "error" in result
+            # Set the side effect for OpenAI invoke
+            mock_llm_manager.openai.invoke.side_effect = Exception("LLM error")
+
+            agent = SecondaryJudgeAgent(mock_llm_manager)
+
+            result = agent.evaluate_plan("TestPlan", "plan content", "audit content")
+            assert isinstance(result, dict)
+            assert result["success"] is False
+            assert "error" in result
 
     @patch("src.config.llm_config.LLMManager")
     def test_primary_judge_tool_initialization_error(self, mock_llm_manager):
@@ -908,7 +918,7 @@ class TestAnalysisAgent:
         """Test analysis agent configuration settings"""
         mock_llm_manager.openai = Mock()
 
-        agent = AnalysisAgent(mock_llm_manager)
+        agent = AnalysisAgent(mock_llm_manager, verbose=True, allow_delegation=False)
 
         # Check agent configuration
         assert agent.agent.verbose is True
@@ -977,18 +987,28 @@ class TestAnalysisAgent:
     @patch("src.config.llm_config.LLMManager")
     def test_analysis_agent_error_handling(self, mock_llm_manager):
         """Test analysis agent error handling in strategic analysis"""
+        # Mock both LLMs to ensure consistent behavior
         mock_llm_manager.openai = Mock()
-        mock_llm_manager.openai.invoke.side_effect = Exception("LLM error")
+        mock_llm_manager.gemini = Mock()
 
-        agent = AnalysisAgent(mock_llm_manager)
+        # Mock the LLM availability check to return OpenAI as available
+        with patch(
+            "src.utils.llm_resilience_manager.LLMResilienceManager.check_llm_availability"
+        ) as mock_availability:
+            mock_availability.return_value = {"openai": True, "gemini": False}
 
-        test_evaluations = [{"plan_name": "TestPlan"}]
-        test_scoring = {"rankings": []}
+            # Set the side effect for OpenAI invoke
+            mock_llm_manager.openai.invoke.side_effect = Exception("LLM error")
 
-        result = agent.generate_strategic_analysis(test_evaluations, test_scoring)
-        assert isinstance(result, dict)
-        assert result["success"] is False
-        assert "error" in result
+            agent = AnalysisAgent(mock_llm_manager)
+
+            test_evaluations = [{"plan_name": "TestPlan"}]
+            test_scoring = {"rankings": []}
+
+            result = agent.generate_strategic_analysis(test_evaluations, test_scoring)
+            assert isinstance(result, dict)
+            assert result["success"] is False
+            assert "error" in result
 
     @patch("src.config.llm_config.LLMManager")
     def test_generate_strategic_analysis(self, mock_llm_manager):
