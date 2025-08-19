@@ -685,7 +685,10 @@ class EvaluationReportGenerator:
         content.append(Paragraph("Executive Summary", self.styles["Heading1"]))
         content.append(Spacer(1, 0.3 * inch))
 
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
         plans = results.get("individual_evaluations", {})
+        if not plans:
+            plans = results.get("plans", {})
         resilience_info = results.get("resilience_info", {})
 
         if plans:
@@ -746,7 +749,10 @@ class EvaluationReportGenerator:
         content.append(Paragraph("Scoring Overview", self.styles["Heading1"]))
         content.append(Spacer(1, 0.3 * inch))
 
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
         plans = results.get("individual_evaluations", {})
+        if not plans:
+            plans = results.get("plans", {})
         if plans:
             # Create scoring table
             data = [

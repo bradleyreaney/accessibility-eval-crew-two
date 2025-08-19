@@ -29,14 +29,23 @@ class AnalysisAgent:
     - Organizational fit analysis
     """
 
-    def __init__(self, llm_manager: LLMManager):
+    def __init__(
+        self,
+        llm_manager: LLMManager,
+        verbose: bool = False,
+        allow_delegation: bool = False,
+    ):
         """
         Initialize the analysis agent.
 
         Args:
             llm_manager: LLM configuration manager
+            verbose: Whether to enable verbose output
+            allow_delegation: Whether to allow task delegation
         """
         self.llm_manager = llm_manager
+        self.verbose = verbose
+        self.allow_delegation = allow_delegation
         self._llm = None  # Lazy initialization
         self.agent = None  # Will be created when needed
         self.tools = self._initialize_tools()
@@ -107,8 +116,8 @@ class AnalysisAgent:
                         You excel at translating evaluation insights into actionable
                         strategic roadmaps that consider organizational culture, technical
                         constraints, and business objectives.""",
-            verbose=False,
-            allow_delegation=False,
+            verbose=self.verbose,
+            allow_delegation=self.allow_delegation,
             llm=self.llm,
             tools=[],
         )
