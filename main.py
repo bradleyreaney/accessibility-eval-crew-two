@@ -33,6 +33,15 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    # python-dotenv not installed, continue without it
+    pass
+
 from src.config.cli_config import CLIConfiguration
 from src.config.crew_config import AccessibilityEvaluationCrew
 from src.config.llm_config import LLMManager
@@ -45,6 +54,27 @@ from src.utils.workflow_controller import WorkflowController
 # Apply environment-level suppression immediately
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# Disable telemetry and external services
+os.environ["CREWAI_DISABLE_TELEMETRY"] = "1"
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["LANGCHAIN_API_KEY"] = ""
+os.environ["LANGCHAIN_ENDPOINT"] = ""
+os.environ["LANGCHAIN_PROJECT"] = ""
+os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = ""
+os.environ["OTEL_EXPORTER_OTLP_PROTOCOL"] = ""
+os.environ["OTEL_TRACES_EXPORTER"] = "none"
+os.environ["OTEL_METRICS_EXPORTER"] = "none"
+os.environ["OTEL_LOGS_EXPORTER"] = "none"
+os.environ["OPENTELEMETRY_PYTHON_DISABLED"] = "true"
+os.environ["OTEL_PYTHON_DISABLED"] = "true"
+os.environ["OTEL_SDK_DISABLED"] = "true"
+os.environ["OTEL_TRACES_SAMPLER"] = "always_off"
+os.environ["OTEL_METRICS_EXPORTER"] = "none"
+os.environ["OTEL_LOGS_EXPORTER"] = "none"
+os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] = ""
+os.environ["OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"] = ""
+os.environ["OTEL_EXPORTER_OTLP_LOGS_ENDPOINT"] = ""
 
 # Comprehensive warning suppression
 warnings.filterwarnings("ignore")
@@ -100,6 +130,71 @@ class AccessibilityEvaluationCLI:
         self.report_generator = EvaluationReportGenerator()
         self.workflow_controller: Optional[WorkflowController] = None
 
+    def clear_historical_data(self, output_dir: Path) -> None:
+        """
+        Clear all historical reports and data from output directory and related folders.
+
+        Args:
+            output_dir: Directory to clean (default: output/reports)
+
+        Raises:
+            OSError: If cleanup fails due to file system issues
+        """
+        try:
+            # Always ensure the output directory exists
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Get the parent output directory to clean related folders
+            output_parent = output_dir.parent
+
+            # Clean up reports directory
+            if output_dir.exists():
+                # Remove all files in reports directory
+                for file_path in output_dir.glob("*"):
+                    if file_path.is_file():
+                        file_path.unlink()
+                    elif file_path.is_dir():
+                        import shutil
+
+                        shutil.rmtree(file_path)
+
+                print(f"🧹 Cleared historical reports from {output_dir}")
+            else:
+                print(f"📁 Created output directory: {output_dir}")
+
+            # Clean up evaluations directory
+            evaluations_dir = output_parent / "evaluations"
+            if evaluations_dir.exists():
+                for file_path in evaluations_dir.glob("*"):
+                    if file_path.is_file():
+                        file_path.unlink()
+                    elif file_path.is_dir():
+                        import shutil
+
+                        shutil.rmtree(file_path)
+                print(f"🧹 Cleared historical evaluations from {evaluations_dir}")
+
+            # Clean up comparisons directory
+            comparisons_dir = output_parent / "comparisons"
+            if comparisons_dir.exists():
+                for file_path in comparisons_dir.glob("*"):
+                    if file_path.is_file():
+                        file_path.unlink()
+                    elif file_path.is_dir():
+                        import shutil
+
+                        shutil.rmtree(file_path)
+                print(f"🧹 Cleared historical comparisons from {comparisons_dir}")
+
+            # Clean up any other temporary files in output directory
+            for temp_file in output_parent.glob(".*"):
+                if temp_file.name in [".DS_Store", ".DS_Store?", "._*"]:
+                    temp_file.unlink()
+                    print(f"🧹 Removed temporary file: {temp_file}")
+
+        except Exception as e:
+            raise OSError(f"Failed to clear historical data: {e}")
+
     def setup_argument_parser(self) -> argparse.ArgumentParser:
         """
         Configure and return the argument parser for CLI options.
@@ -127,22 +222,22 @@ Examples:
         # Core directory options
         parser.add_argument(
             "--audit-dir",
-            type=str,
-            default="data/audit-reports",
+            type=Path,
+            default=Path("data/audit-reports"),
             help="Directory containing accessibility audit reports (default: data/audit-reports)",
         )
 
         parser.add_argument(
             "--plans-dir",
-            type=str,
-            default="data/remediation-plans",
+            type=Path,
+            default=Path("data/remediation-plans"),
             help="Directory containing remediation plans (default: data/remediation-plans)",
         )
 
         parser.add_argument(
             "--output",
-            type=str,
-            default="output/reports",
+            type=Path,
+            default=Path("output/reports"),
             help="Output directory for generated reports (default: output/reports)",
         )
 
@@ -188,6 +283,13 @@ Examples:
             help="Timeout for evaluation operations in seconds (default: 300)",
         )
 
+        # Historical data management
+        parser.add_argument(
+            "--keep-history",
+            action="store_true",
+            help="Keep historical data including reports, evaluations, and comparisons (default: clear all previous data)",
+        )
+
         return parser
 
     def validate_environment(self) -> bool:
@@ -200,8 +302,8 @@ Examples:
         try:
             print("🔧 Validating environment configuration...")
 
-            # Initialize CLI configuration
-            self.config = CLIConfiguration()
+            # CLI configuration will be initialized in main() with parsed args
+            # For now, just validate LLM components
 
             # Initialize LLM manager
             self.llm_manager = LLMManager.from_environment()
@@ -254,7 +356,7 @@ Examples:
             print(f"❌ Environment validation failed: {str(e)}")
             return False
 
-    def discover_files(self, audit_dir: str, plans_dir: str) -> Dict[str, List[Path]]:
+    def discover_files(self, audit_dir: Path, plans_dir: Path) -> Dict[str, List[Path]]:
         """
         Discover audit reports and remediation plans in specified directories.
 
@@ -265,10 +367,8 @@ Examples:
         Returns:
             Dictionary with discovered file paths
         """
-        from pathlib import Path
-
-        audit_path = Path(audit_dir)
-        plans_path = Path(plans_dir)
+        audit_path = audit_dir
+        plans_path = plans_dir
 
         print("🔍 Discovering files...")
         print(f"   📁 Audit reports directory: {audit_path}")
@@ -343,6 +443,11 @@ Examples:
             else:
                 print("🛡️  Resilience Mode: All LLMs available")
 
+        # Record start time for duration calculation
+        from datetime import datetime
+
+        start_time = datetime.now()
+
         # Execute evaluation based on mode
         if mode == "single":
             results = await self.workflow_controller.start_evaluation(
@@ -359,6 +464,17 @@ Examples:
         else:
             raise ValueError(f"Unsupported evaluation mode: {mode}")
 
+        # Calculate execution duration
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds() / 60.0  # Convert to minutes
+
+        # Add execution metadata to results
+        results["execution_metadata"] = {
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "duration_minutes": duration,
+        }
+
         # Add resilience information to results if available
         if self.resilience_manager:
             results["resilience_stats"] = (
@@ -369,7 +485,7 @@ Examples:
         return results
 
     def generate_report(
-        self, evaluation_results: Dict[str, Any], output_dir: str, report_level: str
+        self, evaluation_results: Dict[str, Any], output_dir: Path, report_level: str
     ) -> str:
         """
         Generate comprehensive PDF report from evaluation results.
@@ -385,21 +501,38 @@ Examples:
         print(f"📄 Generating {report_level.title()} PDF Report")
 
         # Ensure output directory exists
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate report
-        from datetime import datetime
-        from pathlib import Path
+        # Create comprehensive execution metadata
+        execution_metadata = self.config.create_execution_metadata()
+
+        # Add discovered files to metadata
+        if hasattr(self, "discovery_results"):
+            execution_metadata["audit_files"] = [
+                f.name for f in self.discovery_results.get("audit_files", [])
+            ]
+            execution_metadata["plan_files"] = [
+                f.name for f in self.discovery_results.get("plan_files", [])
+            ]
+
+        # Add execution timing information if available
+        if "execution_metadata" in evaluation_results:
+            exec_meta = evaluation_results["execution_metadata"]
+            execution_metadata["execution_timestamp"] = exec_meta.get(
+                "start_time", execution_metadata["execution_timestamp"]
+            )
+            execution_metadata["duration_minutes"] = exec_meta.get(
+                "duration_minutes", 0
+            )
+
+        # Add report types configuration
+        execution_metadata["configuration"]["report_types"] = report_level
 
         report_paths = self.report_generator.generate_cli_report_package(
             evaluation_results=evaluation_results,
             report_types=[report_level, "pdf", "json"],  # Generate multiple formats
-            output_dir=Path(output_dir),
-            metadata={
-                "execution_time": datetime.now().isoformat(),
-                "report_level": report_level,
-                "cli_version": "1.0.0",
-            },
+            output_dir=output_dir,
+            metadata=execution_metadata,
         )
 
         # Return the primary PDF report path as string
@@ -442,6 +575,8 @@ Examples:
             # Discover input files
             try:
                 discovery_results = self.discover_files(args.audit_dir, args.plans_dir)
+                # Store discovery results for report generation
+                self.discovery_results = discovery_results
             except FileNotFoundError as e:
                 print(f"❌ File discovery failed: {str(e)}")
                 sys.exit(1)
@@ -453,6 +588,13 @@ Examples:
                 )
                 print("✅ System ready for evaluation")
                 return
+
+            # Clear historical data unless --keep-history is specified
+            if not args.keep_history:
+                print("🧹 Clearing previous evaluation data...")
+                self.clear_historical_data(args.output)
+            else:
+                print("📚 Keeping historical data as requested")
 
             # Prepare evaluation input
             # Create evaluation input from discovered files

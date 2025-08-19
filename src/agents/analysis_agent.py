@@ -37,9 +37,48 @@ class AnalysisAgent:
             llm_manager: LLM configuration manager
         """
         self.llm_manager = llm_manager
-        self.llm = llm_manager.openai  # Use GPT-4 for strategic analysis
-        self.agent = self._create_agent()
+        self._llm = None  # Lazy initialization
+        self.agent = None  # Will be created when needed
         self.tools = self._initialize_tools()
+
+    @property
+    def llm(self):
+        """Get the appropriate LLM with fallback logic"""
+        if self._llm is None:
+            # Check availability first to avoid quota errors
+            try:
+                from ..utils.llm_resilience_manager import LLMResilienceManager
+
+                resilience_manager = LLMResilienceManager(self.llm_manager)
+                availability = resilience_manager.check_llm_availability()
+
+                if availability.get("openai", False):
+                    # OpenAI is available, use it
+                    self._llm = self.llm_manager.openai
+                    logger.info("Analysis agent using OpenAI")
+                else:
+                    # OpenAI not available, use Gemini
+                    self._llm = self.llm_manager.gemini
+                    logger.info("Analysis agent using Gemini (OpenAI unavailable)")
+            except Exception as e:
+                # Fallback to Gemini if anything goes wrong
+                logger.warning(
+                    f"Error checking LLM availability ({e}), falling back to Gemini"
+                )
+                self._llm = self.llm_manager.gemini
+        return self._llm
+
+    @property
+    def agent(self):
+        """Get the agent with lazy initialization"""
+        if self._agent is None:
+            self._agent = self._create_agent()
+        return self._agent
+
+    @agent.setter
+    def agent(self, value):
+        """Set the agent"""
+        self._agent = value
 
     def _create_agent(self) -> Agent:
         """Create the analysis agent with proper configuration"""
@@ -63,7 +102,7 @@ class AnalysisAgent:
                         You excel at translating evaluation insights into actionable
                         strategic roadmaps that consider organizational culture, technical
                         constraints, and business objectives.""",
-            verbose=True,
+            verbose=False,
             allow_delegation=False,
             llm=self.llm,
             tools=[],

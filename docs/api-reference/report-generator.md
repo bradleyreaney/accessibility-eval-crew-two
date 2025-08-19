@@ -1,19 +1,23 @@
 # Report Generator API Reference
 
-*Professional PDF and data export functionality for evaluation results with LLM resilience support*
+*Professional PDF and data export functionality for evaluation results with enhanced styling and unified reporting*
 
 ## 📄 EvaluationReportGenerator
     # CLI integration for command-line interface
 
-Enhanced report generator providing professional PDF reports, CSV/JSON exports, and complete report packages with comprehensive LLM resilience support including NA handling, availability status reporting, and completion statistics.
+Enhanced report generator providing unified PDF reports with professional styling, CSV/JSON exports, and complete report packages. Features include enhanced visual design, professional color schemes, score comparison charts, and comprehensive LLM resilience support.
 
 ### Class Definition
 ```python
 class EvaluationReportGenerator:
     """
-    Generator for comprehensive evaluation reports with LLM resilience support.
+    Generator for comprehensive evaluation reports with enhanced styling and unified reporting.
     
     Creates formatted reports from evaluation results including:
+    - Unified PDF reports combining all sections
+    - Professional styling with color schemes
+    - Enhanced table of contents and navigation
+    - Score comparison charts and visual elements
     - Executive summary with partial evaluation support
     - Detailed plan analysis with NA sections
     - Score comparisons with availability status
@@ -38,7 +42,36 @@ def __init__(self):
 
 ## 📊 Core Report Generation
 
-### PDF Report Generation
+### Unified PDF Report Generation
+```python
+def generate_unified_pdf_report(
+    self,
+    evaluation_results: Dict[str, Any],
+    output_dir: Path,
+    metadata: Dict[str, Any]
+) -> Path:
+    """Generate a single unified PDF report containing all sections with enhanced styling"""
+```
+
+**Parameters:**
+- `evaluation_results`: Complete evaluation data structure
+- `output_dir`: Output directory for the report
+- `metadata`: Execution metadata and configuration
+
+**Features:**
+- Single comprehensive PDF combining all report sections
+- Professional styling with color schemes
+- Enhanced table of contents
+- Score comparison charts
+- Professional metadata tables
+- Consistent typography and spacing
+
+**Output:**
+- Single PDF file: `accessibility_evaluation_report_{timestamp}.pdf`
+- Professional A4 formatting
+- Enhanced visual elements and styling
+
+### Traditional PDF Report Generation
 ```python
 def generate_pdf_report(
     self,
@@ -62,6 +95,57 @@ def generate_pdf_report(
 - `"detailed"`: In-depth technical analysis with availability status
 - `"comparative"`: Side-by-side plan comparison with completion statistics
 - `"synthesis"`: Strategic recommendations focus with resilience information
+
+## 🎨 Enhanced Styling Features
+
+### Professional Color Scheme
+```python
+self.colors = {
+    'primary': colors.HexColor('#2E86AB'),      # Professional blue
+    'secondary': colors.HexColor('#A23B72'),    # Professional purple
+    'accent': colors.HexColor('#F18F01'),       # Professional orange
+    'success': colors.HexColor('#C73E1D'),      # Professional red
+    'light_gray': colors.HexColor('#F8F9FA'),   # Light background
+    'dark_gray': colors.HexColor('#343A40'),    # Dark text
+    'border': colors.HexColor('#DEE2E6'),       # Border color
+}
+```
+
+### Enhanced Table of Contents
+```python
+def _create_table_of_contents(self) -> List:
+    """Create professional table of contents with enhanced styling"""
+```
+
+**Features:**
+- Professional color scheme integration
+- Numbered entries for better navigation
+- Subtle dividers and improved spacing
+- Consistent typography and font sizing
+
+### Score Comparison Charts
+```python
+def _create_chart_elements(self, evaluation_results: Dict[str, Any]) -> List:
+    """Create enhanced chart elements for visual data representation"""
+```
+
+**Features:**
+- Visual bar chart representations
+- Professional table styling
+- Automatic generation for multiple plans
+- Enhanced color scheme integration
+
+### Professional Metadata Tables
+```python
+def _create_execution_summary_section(self, metadata: Dict[str, Any]) -> List:
+    """Create execution summary section with enhanced styling"""
+```
+
+**Features:**
+- Enhanced styling with alternating row colors
+- Professional borders and grid lines
+- Improved padding and spacing
+- Better visual hierarchy
 
 ### CSV Export with NA Support
 ```python
@@ -166,20 +250,24 @@ def generate_completion_summary_report(
 def generate_cli_report_package(
     self,
     evaluation_results: Dict[str, Any],
-    output_dir: Optional[Path] = None
+    report_types: List[str],
+    output_dir: Path,
+    metadata: Dict[str, Any]
 ) -> Dict[str, Path]:
-    """Generate complete CLI report package with all report types"""
+    """Generate complete CLI report package with unified reporting"""
 ```
 
 **Package Contents:**
-- Comprehensive PDF report
-- Executive summary
-- Detailed analysis
-- Comparative analysis
-- Synthesis recommendations
-- Completion summary report
+- **Unified PDF Report** (combines all sections)
 - CSV export
 - JSON export
+- All files with consistent timestamping
+
+**Key Changes:**
+- Single unified PDF instead of multiple separate files
+- Enhanced styling and professional formatting
+- Score comparison charts and visual elements
+- Professional table of contents and navigation
 
 ## 🎨 PDF Report Components
 
