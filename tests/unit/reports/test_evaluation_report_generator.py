@@ -485,7 +485,7 @@ class TestEvaluationReportGenerator:
     def test_cli_report_package_includes_completion_summary(
         self, report_generator, sample_partial_evaluation_results
     ):
-        """Test CLI report package includes completion summary."""
+        """Test CLI report package includes unified report and data exports."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
             metadata = {"execution_timestamp": "2025-01-01T12:00:00"}
@@ -497,15 +497,18 @@ class TestEvaluationReportGenerator:
                 metadata,
             )
 
-            # Should include completion summary
-            assert "completion_summary" in report_paths
-            assert report_paths["completion_summary"].exists()
+            # Should include unified report (replaces individual PDFs)
+            assert "unified_report" in report_paths
+            assert report_paths["unified_report"].exists()
 
-            # Should include other expected reports
-            assert "execution_summary" in report_paths
-            assert "comprehensive" in report_paths
+            # Should include data exports
             assert "csv" in report_paths
             assert "json" in report_paths
+
+            # Verify file types
+            assert report_paths["unified_report"].suffix == ".pdf"
+            assert report_paths["csv"].suffix == ".csv"
+            assert report_paths["json"].suffix == ".json"
 
     def test_generate_unified_pdf_report_creates_single_file(
         self, report_generator, sample_evaluation_results

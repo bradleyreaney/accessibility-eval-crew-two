@@ -45,7 +45,7 @@ class LLMRateLimitError(LLMError):
         self,
         llm_type: str,
         retry_after_seconds: Optional[int] = None,
-        retryable: bool = True,
+        retryable: bool = False,
     ):
         retry_info = (
             f" (retry after {retry_after_seconds}s)" if retry_after_seconds else ""

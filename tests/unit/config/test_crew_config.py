@@ -281,8 +281,14 @@ class TestAccessibilityEvaluationCrew:
         result = crew._execute_individual_evaluations(sample_evaluation_input)
 
         # Assert
-        assert result == {"result": "test"}
-        mock_crew_class.assert_called_once()
+        # The result should be a list since we have 2 plans
+        assert isinstance(result, list)
+        assert len(result) == 2
+        # Each result should contain the mocked response
+        for item in result:
+            assert item == {"result": "test"}
+        # Should be called twice (once for each plan)
+        assert mock_crew_class.call_count == 2
         # Should have both judges in the crew
         called_agents = mock_crew_class.call_args[1]["agents"]
         assert len(called_agents) == 2
@@ -316,8 +322,14 @@ class TestAccessibilityEvaluationCrew:
         result = crew._execute_individual_evaluations(sample_evaluation_input)
 
         # Assert
-        assert result == {"result": "test"}
-        mock_crew_class.assert_called_once()
+        # The result should be a list since we have 2 plans
+        assert isinstance(result, list)
+        assert len(result) == 2
+        # Each result should contain the mocked response
+        for item in result:
+            assert item == {"result": "test"}
+        # Should be called twice (once for each plan)
+        assert mock_crew_class.call_count == 2
         # Should have only one judge in the crew
         called_agents = mock_crew_class.call_args[1]["agents"]
         assert len(called_agents) == 1

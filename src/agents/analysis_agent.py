@@ -68,6 +68,11 @@ class AnalysisAgent:
                 self._llm = self.llm_manager.gemini
         return self._llm
 
+    @llm.setter
+    def llm(self, value):
+        """Set the LLM (for testing purposes)"""
+        self._llm = value
+
     @property
     def agent(self):
         """Get the agent with lazy initialization"""

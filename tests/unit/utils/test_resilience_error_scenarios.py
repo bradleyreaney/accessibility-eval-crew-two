@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from src.config.crew_config import AccessibilityEvaluationCrew
-from src.models.evaluation_models import EvaluationInput
+from src.models.evaluation_models import DocumentContent, EvaluationInput
 from src.utils.llm_exceptions import (
     LLMAuthenticationError,
     LLMConnectionError,
@@ -79,7 +79,7 @@ class TestResilienceErrorScenarios:
         )
 
         assert result["success"] is False
-        assert "timeout" in result["error"].lower()
+        assert "timed out" in result["error"].lower()
         assert result["retryable"] is True
 
     def test_llm_rate_limit_error_handling(self):
@@ -190,19 +190,17 @@ class TestResilienceErrorScenarios:
     def test_partial_evaluation_error_handling(self):
         """Test handling of partial evaluation errors"""
 
-        # Mock partial evaluation scenario
-        with patch.object(
-            self.resilience_manager, "check_llm_availability"
-        ) as mock_availability:
-            mock_availability.return_value = {"gemini": False, "openai": False}
+        # Mock partial evaluation scenario by setting internal status
+        self.resilience_manager.llm_status["gemini"].available = False
+        self.resilience_manager.llm_status["openai"].available = False
 
-            # When no LLMs are available, it should return NA result
-            result = self.resilience_manager.evaluate_plan_with_fallback(
-                "TestPlan", "Test content", "Test context"
-            )
+        # When no LLMs are available, it should return NA result
+        result = self.resilience_manager.evaluate_plan_with_fallback(
+            "TestPlan", "Test content", "Test context"
+        )
 
-            assert result["status"] == "NA"
-            assert "LLM unavailable" in result["na_reason"]
+        assert result["status"] == "NA"
+        assert "LLMs unavailable" in result["na_reason"]
 
     def test_llm_availability_check_failures(self):
         """Test LLM availability check failure scenarios"""
@@ -284,6 +282,10 @@ class TestResilienceErrorScenarios:
     def test_status_tracking_and_monitoring(self):
         """Test status tracking and monitoring functionality"""
 
+        # Set initial status to unavailable for testing
+        self.resilience_manager.llm_status["gemini"].available = False
+        self.resilience_manager.llm_status["openai"].available = False
+
         # Test initial status
         status = self.resilience_manager.get_status_summary()
         assert len(status["llm_status"]) == 2
@@ -334,21 +336,21 @@ class TestResilienceErrorScenarios:
 
         # Test with None error
         classification = classify_llm_error(None, "gemini")
-        assert classification["error_type"] == "unknown"
-        assert classification["retryable"] is True
+        assert classification.retryable is True
+        assert "unknown" in str(classification).lower()
 
         # Test with string error
         classification = classify_llm_error("Some string error", "gemini")
-        assert classification["error_type"] == "unknown"
-        assert classification["retryable"] is True
+        assert classification.retryable is True
+        assert "unknown" in str(classification).lower()
 
         # Test with custom exception
         class CustomError(Exception):
             pass
 
         classification = classify_llm_error(CustomError("Custom error"), "gemini")
-        assert classification["error_type"] == "unknown"
-        assert classification["retryable"] is True
+        assert classification.retryable is True
+        assert "unknown" in str(classification).lower()
 
 
 class TestWorkflowControllerErrorScenarios:
@@ -371,10 +373,18 @@ class TestWorkflowControllerErrorScenarios:
             "openai": False,
         }
 
+        # Create proper EvaluationInput structure
+        audit_report = DocumentContent(
+            title="Test Audit", content="Test context", page_count=1, metadata={}
+        )
+        remediation_plans = {
+            "PlanA": DocumentContent(
+                title="TestPlan", content="Test content", page_count=1, metadata={}
+            )
+        }
+
         evaluation_input = EvaluationInput(
-            plan_name="TestPlan",
-            plan_content="Test content",
-            audit_context="Test context",
+            audit_report=audit_report, remediation_plans=remediation_plans
         )
 
         with pytest.raises(RuntimeError, match="No LLMs available"):
@@ -400,10 +410,18 @@ class TestWorkflowControllerErrorScenarios:
             "llm_used": "gemini",
         }
 
+        # Create proper EvaluationInput structure
+        audit_report = DocumentContent(
+            title="Test Audit", content="Test context", page_count=1, metadata={}
+        )
+        remediation_plans = {
+            "PlanA": DocumentContent(
+                title="TestPlan", content="Test content", page_count=1, metadata={}
+            )
+        }
+
         evaluation_input = EvaluationInput(
-            plan_name="TestPlan",
-            plan_content="Test content",
-            audit_context="Test context",
+            audit_report=audit_report, remediation_plans=remediation_plans
         )
 
         # Should not raise exception
@@ -436,10 +454,18 @@ class TestCrewErrorScenarios:
             "openai": False,
         }
 
+        # Create proper EvaluationInput structure
+        audit_report = DocumentContent(
+            title="Test Audit", content="Test context", page_count=1, metadata={}
+        )
+        remediation_plans = {
+            "PlanA": DocumentContent(
+                title="TestPlan", content="Test content", page_count=1, metadata={}
+            )
+        }
+
         evaluation_input = EvaluationInput(
-            plan_name="TestPlan",
-            plan_content="Test content",
-            audit_context="Test context",
+            audit_report=audit_report, remediation_plans=remediation_plans
         )
 
         result = self.crew.execute_evaluation(evaluation_input)
@@ -457,10 +483,18 @@ class TestCrewErrorScenarios:
             "openai": False,
         }
 
+        # Create proper EvaluationInput structure
+        audit_report = DocumentContent(
+            title="Test Audit", content="Test context", page_count=1, metadata={}
+        )
+        remediation_plans = {
+            "PlanA": DocumentContent(
+                title="TestPlan", content="Test content", page_count=1, metadata={}
+            )
+        }
+
         evaluation_input = EvaluationInput(
-            plan_name="TestPlan",
-            plan_content="Test content",
-            audit_context="Test context",
+            audit_report=audit_report, remediation_plans=remediation_plans
         )
 
         # Mock successful evaluation

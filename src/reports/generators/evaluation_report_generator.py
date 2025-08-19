@@ -1014,7 +1014,10 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             output_path = self.output_dir / f"evaluation_scores_{timestamp}.csv"
 
         # Create CSV data
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
         plans = evaluation_results.get("individual_evaluations", {})
+        if not plans:
+            plans = evaluation_results.get("plans", {})
         data = []
 
         for plan_name, plan_data in plans.items():
@@ -1074,7 +1077,11 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
         Returns:
             Dictionary containing completion statistics
         """
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
         plans = evaluation_results.get("individual_evaluations", {})
+        if not plans:
+            plans = evaluation_results.get("plans", {})
+
         resilience_info = evaluation_results.get("resilience_info", {})
 
         # Count different statuses
@@ -1271,14 +1278,17 @@ Analysis: {plan_data.get('analysis', 'No analysis available')}
             output_path = self.output_dir / f"evaluation_results_{timestamp}.json"
 
         # Create export data with metadata and resilience information
+        # Handle both "individual_evaluations" and "plans" keys for backward compatibility
+        plans = evaluation_results.get("individual_evaluations", {})
+        if not plans:
+            plans = evaluation_results.get("plans", {})
+
         export_data = {
             "metadata": {
                 "exported_at": datetime.now().isoformat(),
                 "export_type": "evaluation_results",
                 "version": "1.0",
-                "plans_count": len(
-                    evaluation_results.get("individual_evaluations", {})
-                ),
+                "plans_count": len(plans),
             },
             "evaluation_results": evaluation_results,
         }

@@ -277,8 +277,10 @@ class TestWorkflowController:
         assert "llm_availability" in result
         assert "resilience_info" in result
         assert result["llm_availability"] == {"gemini": True, "openai": False}
+        # The partial_evaluation should be True since not all LLMs are available
         assert result["resilience_info"]["partial_evaluation"] is True
         assert "openai" in result["resilience_info"]["unavailable_llms"]
+        assert "gemini" in result["resilience_info"]["available_llms"]
 
     def test_estimate_completion_time_scales_with_plan_count(
         self, workflow_controller, sample_evaluation_input
