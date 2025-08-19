@@ -918,7 +918,7 @@ class TestAnalysisAgent:
         """Test analysis agent configuration settings"""
         mock_llm_manager.openai = Mock()
 
-        agent = AnalysisAgent(mock_llm_manager)
+        agent = AnalysisAgent(mock_llm_manager, verbose=True, allow_delegation=False)
 
         # Check agent configuration
         assert agent.agent.verbose is True

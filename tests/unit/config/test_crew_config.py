@@ -361,7 +361,7 @@ class TestAccessibilityEvaluationCrew:
 
         # Check that the results contain the expected NA status information
         for item in result:
-            assert "Status: NA" in item
+            assert "**Status:** NA" in item
             assert "No evaluation agents available" in item
 
     @patch("src.config.crew_config.Crew")
@@ -495,7 +495,7 @@ class TestAccessibilityEvaluationCrew:
 
         # Check that the results contain the expected NA status information
         for item in result:
-            assert "Status: NA" in item
+            assert "**Status:** NA" in item
             assert "No evaluation agents available" in item
 
     @patch("src.config.crew_config.Crew")

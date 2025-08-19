@@ -14,7 +14,9 @@ class TestAnalysisAgent(unittest.TestCase):
         mock_llm_manager = MagicMock()
         mock_llm_manager.openai = MagicMock()
         mock_llm_manager.openai.model_name = "gpt-4"
-        self.agent_wrapper = AnalysisAgent(mock_llm_manager)
+        self.agent_wrapper = AnalysisAgent(
+            mock_llm_manager, verbose=True, allow_delegation=False
+        )
 
     def test_agent_initialization(self):
         """Test agent initialization."""
@@ -119,7 +121,9 @@ class TestAnalysisAgentAdditionalCoverage(unittest.TestCase):
         mock_llm_manager = MagicMock()
         mock_llm_manager.openai = MagicMock()
         mock_llm_manager.openai.model_name = "gpt-4"
-        self.agent_wrapper = AnalysisAgent(mock_llm_manager)
+        self.agent_wrapper = AnalysisAgent(
+            mock_llm_manager, verbose=True, allow_delegation=False
+        )
 
         # Mock the LLM response
         mock_response = MagicMock()

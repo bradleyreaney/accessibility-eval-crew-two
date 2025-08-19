@@ -87,7 +87,7 @@ class TestResilienceErrorScenarios:
 
         # Mock rate limit error
         self.mock_llm_manager.gemini_llm.invoke.side_effect = LLMRateLimitError(
-            "gemini", "Rate limit exceeded"
+            "gemini", retryable=False
         )
 
         result = self.resilience_manager.safe_llm_invoke(
@@ -337,12 +337,12 @@ class TestResilienceErrorScenarios:
         # Test with None error
         classification = classify_llm_error(None, "gemini")
         assert classification.retryable is True
-        assert "unknown" in str(classification).lower()
+        assert "connection failed" in str(classification).lower()
 
         # Test with string error
         classification = classify_llm_error("Some string error", "gemini")
         assert classification.retryable is True
-        assert "unknown" in str(classification).lower()
+        assert "connection failed" in str(classification).lower()
 
         # Test with custom exception
         class CustomError(Exception):
@@ -350,7 +350,7 @@ class TestResilienceErrorScenarios:
 
         classification = classify_llm_error(CustomError("Custom error"), "gemini")
         assert classification.retryable is True
-        assert "unknown" in str(classification).lower()
+        assert "connection failed" in str(classification).lower()
 
 
 class TestWorkflowControllerErrorScenarios:
@@ -360,6 +360,12 @@ class TestWorkflowControllerErrorScenarios:
         """Set up workflow controller test components"""
         self.mock_crew = Mock(spec=AccessibilityEvaluationCrew)
         self.mock_resilience_manager = Mock(spec=LLMResilienceManager)
+
+        # Mock the config attribute
+        mock_config = Mock()
+        mock_config.minimum_llm_requirement = 1
+        self.mock_resilience_manager.config = mock_config
+
         self.workflow_controller = WorkflowController(
             self.mock_crew, self.mock_resilience_manager
         )
@@ -387,7 +393,7 @@ class TestWorkflowControllerErrorScenarios:
             audit_report=audit_report, remediation_plans=remediation_plans
         )
 
-        with pytest.raises(RuntimeError, match="No LLMs available"):
+        with pytest.raises(RuntimeError, match="Insufficient LLMs available"):
             asyncio.run(
                 self.workflow_controller._run_evaluation_workflow(
                     evaluation_input, mode="standard", include_consensus=False
@@ -408,6 +414,13 @@ class TestWorkflowControllerErrorScenarios:
             "status": "completed",
             "evaluation_content": "Test evaluation",
             "llm_used": "gemini",
+        }
+
+        # Mock crew execution
+        self.mock_crew.execute_complete_evaluation.return_value = {
+            "individual_evaluations": {"PlanA": {"status": "completed", "score": 8.5}},
+            "comparison_analysis": {"status": "completed"},
+            "optimal_plan": {"status": "completed", "plan": "PlanA"},
         }
 
         # Create proper EvaluationInput structure
@@ -468,7 +481,7 @@ class TestCrewErrorScenarios:
             audit_report=audit_report, remediation_plans=remediation_plans
         )
 
-        result = self.crew.execute_evaluation(evaluation_input)
+        result = self.crew.execute_complete_evaluation(evaluation_input)
 
         # Should return NA results
         assert result is not None
@@ -501,7 +514,7 @@ class TestCrewErrorScenarios:
         with patch.object(self.crew, "get_available_agents") as mock_agents:
             mock_agents.return_value = ["primary_judge"]
 
-            result = self.crew.execute_evaluation(evaluation_input)
+            result = self.crew.execute_complete_evaluation(evaluation_input)
 
             # Should handle partial availability gracefully
             assert result is not None

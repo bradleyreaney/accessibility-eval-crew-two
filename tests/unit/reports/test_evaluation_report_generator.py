@@ -443,7 +443,7 @@ class TestEvaluationReportGenerator:
         content_text = " ".join([str(item) for item in content])
 
         # Should mention partial evaluation
-        assert "completed with 66.7% coverage" in content_text
+        assert "This evaluation was completed with 66.7% coverage" in content_text
         assert "1 evaluations marked as NA" in content_text
         assert "LLM Availability Status section" in content_text
 

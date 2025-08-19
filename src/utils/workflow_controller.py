@@ -315,10 +315,10 @@ class WorkflowController:
             f"DEBUG: individual_evaluations count: {len(parsed_evaluation_results.get('individual_evaluations', {}))}"
         )
 
-        # Merge results
-        results.update(parsed_evaluation_results)
+        # Merge results, but preserve availability information
+        parsed_evaluation_results.update(results)
 
-        return results
+        return parsed_evaluation_results
 
     def _update_progress(self, progress: int, phase: WorkflowPhase):
         """Update workflow progress and phase"""
